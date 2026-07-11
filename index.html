@@ -18,7 +18,6 @@
         }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         
-        /* CORREÇÃO DO VAZAMENTO HORIZONTAL AQUI */
         html { scroll-behavior: smooth; overflow-x: hidden; max-width: 100vw; }
         body { font-family: 'DM Sans', -apple-system, sans-serif; background: radial-gradient(1200px 600px at 15% -10%, rgba(255,209,0,0.06), transparent 60%), var(--bg-base); color: var(--text-hi); padding-bottom: 180px; overflow-x: hidden; width: 100%; max-width: 100vw; -webkit-font-smoothing: antialiased; }
         
@@ -88,7 +87,6 @@
         .toolbar-left h2 { font-size: 18px; font-weight: 700; font-family: 'Sora'; }
         .toolbar-left .count { font-size: 12px; color: var(--text-lo); }
         
-        /* CORREÇÃO DO MENU DE ORDENAÇÃO MOBILE AQUI (flex-wrap e ajuste de widths) */
         .toolbar-right { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; }
         .chip { flex: 1; text-align: center; padding: 8px; border-radius: 6px; background: var(--bg-surface); color: var(--text-md); border: 1px solid var(--line); font-size: 12px; font-weight: 600; cursor: pointer; }
         .chip.active { background: var(--krb-yellow); color: #000; border-color: var(--krb-yellow); }
@@ -129,8 +127,6 @@
         .cart-container { position: fixed; bottom: 0; left: 0; right: 0; z-index: 900; display: none; flex-direction: column; padding: 12px 14px calc(12px + env(safe-area-inset-bottom)); background: #131316; border-top: 1px solid var(--line-strong); box-shadow: 0 -10px 30px rgba(0,0,0,0.9); }
         .pack-counter-balloon { background: var(--bg-elevated); border: 1px solid var(--line); padding: 6px 10px; border-radius: 6px; font-size: 11px; font-family: 'Sora'; font-weight: 600; text-align: center; margin-bottom: 6px; width: 100%; }
         .pack-counter-balloon b { color: var(--krb-yellow); }
-        .pack-progress-bar { height: 4px; background: var(--line); width: 100%; margin-top: 4px; border-radius: 2px; overflow: hidden; }
-        .pack-progress-fill { height: 100%; background: var(--krb-yellow); width: 0%; transition: width 0.2s; }
         
         .cart-fab { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 10px; }
         .cart-main-clickable { display: flex; align-items: center; gap: 8px; text-align: left; cursor: pointer; }
@@ -187,8 +183,8 @@
         <aside class="sidebar" id="sidebar"><div class="sidebar-title">Categorias</div><ul class="cat-list" id="categoryList"></ul></aside>
         <main class="content">
             <div class="pack-promo-banner">
-                <span><i class="fa-solid fa-compact-disc"></i> Adquira suas Músicas!</span>
-                <span>Apenas R$ 10,00 por playback!</span>
+                <span><i class="fa-solid fa-music"></i> Catálogo de Playbacks</span>
+                <span>R$ 10,00 por música</span>
             </div>
             <section class="hero">
                 <span class="hero-eyebrow"><i class="fa-solid fa-crown"></i> KRB Playbacks</span>
@@ -215,7 +211,6 @@
     <div class="cart-container" id="cartContainer">
         <div class="pack-counter-balloon" id="packBalloon">
             <span id="packBalloonText">Selecione músicas</span>
-            <div class="pack-progress-bar"><div class="pack-progress-fill" id="packBarFill"></div></div>
         </div>
         <div class="cart-fab">
             <div class="cart-main-clickable" onclick="sendOrder()">
@@ -251,10 +246,11 @@
         function loadLocalSafely(key) { try { return JSON.parse(localStorage.getItem(key) || "[]"); } catch (e) { return []; } }
         function saveLocalSafely(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
         const favRefs = new Set(loadLocalSafely('krb_favs'));
+        
         const NEW_THRESHOLD = Math.max(1, Math.floor(videosData.length * 0.05));
-        const NEW_MIN_INDEX = Math.max(0, videosData.length - NEW_THRESHOLD);
         function refIndex(ref) { return parseInt(String(ref).replace(/[^0-9]/g, ''), 10) || 0; }
-        function isNew(v) { return refIndex(v.ref) > NEW_MIN_INDEX; }
+        function isNew(v) { return refIndex(v.ref) <= NEW_THRESHOLD; }
+        
         function escapeHtml(s) { return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
         function normalizeString(str) { return (str||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
 
@@ -277,8 +273,9 @@
                 let matchCat = (currentCategory === "__FAV__") ? favRefs.has(v.ref) : (currentCategory === "__NEW__") ? isNew(v) : (currentCategory === "Todos" || v.playlist === currentCategory);
                 return matchCat && (!q || normalizeString(v.titulo + " " + v.ref).includes(q));
             });
-            if (sortMode === "recent") list.sort((a, b) => refIndex(b.ref) - refIndex(a.ref));
-            else if (sortMode === "oldest") list.sort((a, b) => refIndex(a.ref) - refIndex(b.ref));
+            
+            if (sortMode === "recent") list.sort((a, b) => refIndex(a.ref) - refIndex(b.ref));
+            else if (sortMode === "oldest") list.sort((a, b) => refIndex(b.ref) - refIndex(a.ref));
             else if (sortMode === "az") list.sort((a, b) => a.titulo.localeCompare(b.titulo));
             return list;
         }
@@ -356,16 +353,15 @@
             
             const container = document.getElementById('cartContainer');
             const balloon = document.getElementById('packBalloon');
-            const barFill = document.getElementById('packBarFill');
             const txt = document.getElementById('packBalloonText');
 
             if (count > 0) {
                 container.style.display = 'flex';
                 balloon.style.display = 'block';
                 
+                // CÁLCULO DIRETO: R$ 10,00 por música
                 const precoTotal = count * 10;
-                txt.innerHTML = `🛒 <b>${count}</b> música(s) = <b>R$ ${precoTotal.toFixed(2).replace('.', ',')}</b>`;
-                barFill.style.width = '100%';
+                txt.innerHTML = `🛒 Total: <b>R$ ${precoTotal.toFixed(2)}</b> (${count} música${count > 1 ? 's' : ''})`;
             } else {
                 container.style.display = 'none';
                 balloon.style.display = 'none';
@@ -375,7 +371,7 @@
         window.sendOrder = () => { 
             if (selectedRefs.size === 0) return; 
             const count = selectedRefs.size;
-            let precoTotal = count * 10; 
+            let precoTotal = count * 10; // VALOR DIRETO NA MENSAGEM DO WHATSAPP
 
             const list = Array.from(selectedRefs).map(ref => { 
                 const v = videosData.find(x => x.ref === ref); 
@@ -383,7 +379,7 @@
             }).join('\n'); 
 
             let resumoPreco = `Total de Músicas: ${count}\n`;
-            resumoPreco += `💰 Valor Total: R$ ${precoTotal.toFixed(2).replace('.', ',')}`;
+            resumoPreco += `💰 Valor Total: R$ ${precoTotal.toFixed(2)}`;
 
             window.open(`https://wa.me/${zapNumber}?text=${encodeURIComponent('Olá! Quero fechar o meu pedido com os seguintes playbacks:\n\n' + list + '\n\n' + resumoPreco)}`, '_blank'); 
         };
