@@ -6,20 +6,25 @@ import urllib.request
 from pathlib import Path
 import os
 
-# Descobre a pasta real onde este script está guardado para evitar erros de diretório no terminal
-PASTA_DO_SCRIPT = Path(__file__).resolve().parent
-
-# --- CONFIGURAÇÕES DO UTILIZADOR ---
+# --- CONFIGURAÇÕES DE CAMINHOS REAIS (FIXOS PARA EVITAR ERROS DO WINDOWS) ---
+PASTA_DO_SCRIPT = Path(r"C:\Users\ribei\Downloads\catalogo")
+PASTA_PLAYLISTS = Path(r"C:\Users\ribei\Downloads\catalogo\Playlists")
 ARQUIVO_LINKS_PADRAO = PASTA_DO_SCRIPT / "www.youtube.com_20260708_111546.txt"
 ARQUIVO_SAIDA = PASTA_DO_SCRIPT / "catalogo.html"
 ARQUIVO_CACHE_TITULOS = PASTA_DO_SCRIPT / "titulos_cache.json"
-
-# Se este caminho for absoluto, é respeitado. Se for relativo, resolve na pasta do script.
 CAMINHO_LOGO_INPUT = r"C:\Users\ribei\Downloads\channels4_profile.jpg"
-ARQUIVO_LOGO = Path(CAMINHO_LOGO_INPUT) if Path(CAMINHO_LOGO_INPUT).is_absolute() else PASTA_DO_SCRIPT / CAMINHO_LOGO_INPUT
+ARQUIVO_LOGO = Path(CAMINHO_LOGO_INPUT)
 
-SEU_NUMERO_WHATSAPP = "5519996154687"
-PASTA_PLAYLISTS = PASTA_DO_SCRIPT / "Playlists"
+# Número atualizado com DDD 19
+SEU_NUMERO_WHATSAPP = "5519997985748"
+
+# --- LISTA NEGRA DE MÚSICAS COM ERRO ---
+NUMEROS_PARA_REMOVER = {
+    69, 99, 355, 690, 733, 825, 1226, 1249, 1488, 1692, 1693, 
+    1694, 1695, 1733, 1865, 3097, 3098, 3161, 3619, 3777, 3778, 
+    3779, 3780, 3781, 3782, 3801, 3832, 4097, 4387, 4547, 4548, 
+    4769, 5273, 5274
+}
 # -----------------------------------
 
 class Cores:
@@ -31,56 +36,35 @@ class Cores:
     NEGRITO = '\033[1m'
 
 def extrair_id_youtube(url):
-    padroes = [
-        r"youtube\.com/watch\?v=([^&\s]+)",
-        r"youtu\.be/([^?\s]+)",
-        r"youtube\.com/shorts/([^?\s]+)",
-        r"youtube\.com/embed/([^?\s]+)",
-    ]
+    url = url.strip().replace("]", "").replace("[", "")
+    padroes = [r"v=([^&\s]+)", r"youtu\.be/([^?\s]+)", r"shorts/([^?\s]+)", r"embed/([^?\s]+)"]
     for padrao in padroes:
         resultado = re.search(padrao, url)
-        if resultado:
-            return resultado.group(1)
+        if resultado: return resultado.group(1)
     return None
 
 def carregar_cache():
     caminho = Path(ARQUIVO_CACHE_TITULOS)
-    if not caminho.exists():
-        return {}
-    try:
-        return json.loads(caminho.read_text(encoding="utf-8"))
-    except Exception:
-        return {}
+    if not caminho.exists(): return {}
+    try: return json.loads(caminho.read_text(encoding="utf-8"))
+    except: return {}
 
 def salvar_cache(cache):
-    Path(ARQUIVO_CACHE_TITULOS).write_text(
-        json.dumps(cache, ensure_ascii=False, indent=2),
-        encoding="utf-8"
-    )
+    Path(ARQUIVO_CACHE_TITULOS).write_text(json.dumps(cache, ensure_ascii=False, indent=2), encoding="utf-8")
 
 def buscar_titulo_youtube(video_id, cache):
-    if video_id in cache:
-        return cache[video_id]
-
+    if video_id in cache: return cache[video_id]
     url_video = f"https://www.youtube.com/watch?v={video_id}"
     url_oembed = "https://www.youtube.com/oembed?format=json&url=" + urllib.parse.quote(url_video)
-
     try:
-        req = urllib.request.Request(
-            url_oembed, 
-            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-        )
+        req = urllib.request.Request(url_oembed, headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req, timeout=5) as resposta:
             dados = json.loads(resposta.read().decode("utf-8"))
-            titulo = dados.get("title", "").strip()
-
-            if not titulo:
-                titulo = f"Video {video_id}"
-
+            titulo = dados.get("title", "").strip() or f"Video {video_id}"
             cache[video_id] = titulo
             salvar_cache(cache)
             return titulo
-    except Exception:
+    except:
         titulo = f"Video {video_id}"
         cache[video_id] = titulo
         salvar_cache(cache)
@@ -88,120 +72,59 @@ def buscar_titulo_youtube(video_id, cache):
 
 def carregar_logo_base64():
     caminho = Path(ARQUIVO_LOGO)
-    if not caminho.exists():
-        print(f"{Cores.AMARELO}[AVISO]{Cores.RESET} Logo não encontrada em: {ARQUIVO_LOGO}. O catálogo usará uma logo padrão.")
-        return ""
-    try:
-        conteudo = caminho.read_bytes()
-        logo = base64.b64encode(conteudo).decode("utf-8")
-        return f"data:image/jpeg;base64,{logo}"
-    except Exception as e:
-        print(f"{Cores.VERMELHO}[ERRO]{Cores.RESET} Falha ao ler a logo: {e}")
-        return ""
+    if not caminho.exists(): return ""
+    try: return f"data:image/jpeg;base64,{base64.b64encode(caminho.read_bytes()).decode('utf-8')}"
+    except: return ""
 
 def processar_catalogo():
     print(f"{Cores.NEGRITO}{Cores.AZUL}========================================={Cores.RESET}")
-    print(f"{Cores.NEGRITO}      CONSTRUTOR DE CATÁLOGO KRB   {Cores.RESET}")
+    print(f"{Cores.NEGRITO}    CONSTRUTOR DE CATÁLOGO KRB   {Cores.RESET}")
     print(f"{Cores.NEGRITO}{Cores.AZUL}========================================={Cores.RESET}\n")
 
     cache = carregar_cache()
-    videos = []
-    vistos = set()
-    playlists_disponiveis = set()
-    global_id = 1
-
-    caminho_playlists = Path(PASTA_PLAYLISTS)
+    videos, vistos, playlists_disponiveis = [], set(), set()
+    contador_leitura, global_id = 1, 1
     tem_playlists = False
 
-    # 1. Verifica se existem playlists organizadas na pasta 'Playlists'
-    if caminho_playlists.exists():
-        ficheiros_playlists = [f for f in os.listdir(caminho_playlists) if f.endswith('.txt')]
+    if PASTA_PLAYLISTS.exists():
+        ficheiros_playlists = [f for f in os.listdir(PASTA_PLAYLISTS) if f.endswith('.txt')]
         if ficheiros_playlists:
             tem_playlists = True
-            print(f"{Cores.VERDE}[INFO]{Cores.RESET} Encontrada a pasta '{PASTA_PLAYLISTS}' com {len(ficheiros_playlists)} categorias!")
-            
             for ficheiro in sorted(ficheiros_playlists):
                 nome_categoria = os.path.splitext(ficheiro)[0]
                 playlists_disponiveis.add(nome_categoria)
-                caminho_completo = caminho_playlists / ficheiro
-                
-                print(f"\n -> A carregar categoria: {Cores.NEGRITO}{nome_categoria}{Cores.RESET}")
-                
                 try:
-                    conteudo = caminho_completo.read_text(encoding="utf-8", errors="ignore")
-                    urls = re.findall(
-                        r"https?://(?:www\.)?(?:youtube\.com/watch\?v=[^\s\r\n]+|youtu\.be/[^\s\r\n]+|youtube\.com/shorts/[^\s\r\n]+|youtube\.com/embed/[^\s\r\n]+)",
-                        conteudo
-                    )
-                    
-                    contagem_categoria = 0
+                    conteudo = (PASTA_PLAYLISTS / ficheiro).read_text(encoding="utf-8", errors="ignore")
+                    urls = re.findall(r"https?://[^\s\r\n]+", conteudo)
                     for url in urls:
                         video_id = extrair_id_youtube(url)
-                        if not video_id or video_id in vistos:
-                            continue
-                        
+                        if not video_id or video_id in vistos: continue
                         vistos.add(video_id)
-                        print(f"   Processando #{global_id:04d}: {video_id}...", end="\r")
+                        if contador_leitura in NUMEROS_PARA_REMOVER:
+                            contador_leitura += 1
+                            continue
                         titulo = buscar_titulo_youtube(video_id, cache)
-                        
-                        videos.append({
-                            "ref": f"#{global_id:04d}",
-                            "youtubeId": video_id,
-                            "url": f"https://www.youtube.com/watch?v={video_id}",
-                            "titulo": titulo,
-                            "playlist": nome_categoria
-                        })
+                        videos.append({"ref": f"#{global_id:04d}", "youtubeId": video_id, "url": f"https://www.youtube.com/watch?v={video_id}", "titulo": titulo, "playlist": nome_categoria})
                         global_id += 1
-                        contagem_categoria += 1
-                    print(f"   Concluído! {contagem_categoria} vídeos adicionados.              ")
-                except Exception as e:
-                    print(f"\n{Cores.VERMELHO}[ERRO]{Cores.RESET} Falha ao carregar a playlist {ficheiro}: {e}")
+                        contador_leitura += 1
+                except Exception as e: print(f"Erro ao ler {ficheiro}: {e}")
 
-    # 2. Caso não tenha pastas de playlist, usa o arquivo de texto geral padrão
-    if not tem_playlists:
-        print(f"{Cores.AMARELO}[AVISO]{Cores.RESET} Nenhuma playlist encontrada na pasta '{PASTA_PLAYLISTS}'.")
-        print(f"A usar o arquivo padrão geral: {ARQUIVO_LINKS_PADRAO.name}")
-        
-        nome_categoria_padrao = "Geral"
-        playlists_disponiveis.add(nome_categoria_padrao)
-        caminho_padrao = Path(ARQUIVO_LINKS_PADRAO)
-        
-        if caminho_padrao.exists():
-            try:
-                conteudo = caminho_padrao.read_text(encoding="utf-8", errors="ignore")
-                urls = re.findall(
-                    r"https?://(?:www\.)?(?:youtube\.com/watch\?v=[^\s\r\n]+|youtu\.be/[^\s\r\n]+|youtube\.com/shorts/[^\s\r\n]+|youtube\.com/embed/[^\s\r\n]+)",
-                    conteudo
-                )
-                
-                print(f"\n -> A carregar ficheiro geral...")
-                for url in urls:
-                    video_id = extrair_id_youtube(url)
-                    if not video_id or video_id in vistos:
-                        continue
-                    
-                    vistos.add(video_id)
-                    print(f"   Processando #{global_id:04d}: {video_id}...", end="\r")
-                    titulo = buscar_titulo_youtube(video_id, cache)
-                    
-                    videos.append({
-                        "ref": f"#{global_id:04d}",
-                        "youtubeId": video_id,
-                        "url": f"https://www.youtube.com/watch?v={video_id}",
-                        "titulo": titulo,
-                        "playlist": nome_categoria_padrao
-                    })
-                    global_id += 1
-                print(f"   Concluído! {len(videos)} vídeos adicionados com sucesso.              ")
-            except Exception as e:
-                print(f"\n{Cores.VERMELHO}[ERRO]{Cores.RESET} Falha ao carregar o ficheiro padrão: {e}")
-                return []
-        else:
-            print(f"\n{Cores.VERMELHO}[ERRO]{Cores.RESET} O ficheiro padrão '{ARQUIVO_LINKS_PADRAO.name}' não existe na pasta do script!")
-            print(f"Caminho esperado: {ARQUIVO_LINKS_PADRAO}")
-            print("\nPor favor, crie a pasta 'Playlists' com ficheiros .txt ou certifique-se de que o ficheiro geral está nessa pasta.")
-            input("\nPressione Enter para sair...")
-            return []
+    if not tem_playlists and ARQUIVO_LINKS_PADRAO.exists():
+        nome_categoria = "Geral"
+        playlists_disponiveis.add(nome_categoria)
+        conteudo = ARQUIVO_LINKS_PADRAO.read_text(encoding="utf-8", errors="ignore")
+        urls = re.findall(r"https?://[^\s\r\n]+", conteudo)
+        for url in urls:
+            video_id = extrair_id_youtube(url)
+            if not video_id or video_id in vistos: continue
+            vistos.add(video_id)
+            if contador_leitura in NUMEROS_PARA_REMOVER:
+                contador_leitura += 1
+                continue
+            titulo = buscar_titulo_youtube(video_id, cache)
+            videos.append({"ref": f"#{global_id:04d}", "youtubeId": video_id, "url": f"https://www.youtube.com/watch?v={video_id}", "titulo": titulo, "playlist": nome_categoria})
+            global_id += 1
+            contador_leitura += 1
 
     return videos, sorted(list(playlists_disponiveis))
 
@@ -210,977 +133,441 @@ def gerar_html(videos, playlists):
     playlists_json = json.dumps(playlists, ensure_ascii=False)
     logo_base64 = carregar_logo_base64()
 
-    html_template = """<!DOCTYPE html>
+    html_template = r"""<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catálogo KRB | Compra Segura</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Catálogo KRB — Playbacks Premium</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
-
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-base: #0f0f0f;
-            --bg-surface: #212121;
-            --bg-elevated: #3d3d3d;
-            --text-primary: #f1f1f1;
-            --text-secondary: #aaaaaa;
-            --accent: #fff200;
-            --accent-hover: #e6da00;
-            --accent-text: #000000;
-            --border-color: #3f3f3f;
-            --whatsapp-green: #25D366;
-            --mercado-livre: #FFE600;
-            --mercado-livre-text: #2D3277;
+            --bg-void:      #060606; --bg-base:      #0b0b0d; --bg-surface:   #131316; --bg-elevated:  #1c1c21;
+            --bg-hover:     #24242b; --line:         #23232a; --line-strong:  #35353f; --text-hi:      #f5f5f7;
+            --text-md:      #b8b8c2; --text-lo:      #7a7a86; --krb-yellow:   #FFD100; --krb-yellow-2: #FFE566;
+            --wa:           #25D366; --wa-d:         #128C7E; --radius-md: 12px; --radius-lg: 16px;
+            --shadow-card: 0 8px 24px -12px rgba(0,0,0,0.6);
         }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: 'Roboto', Arial, sans-serif;
-            background-color: var(--bg-base);
-            color: var(--text-primary);
-            /* Espaço extra gigante no fundo para a barra não tapar os vídeos */
-            padding-bottom: 240px; 
-            overflow-x: hidden;
-        }
-
-        /* Layout Principal: Header de Topo */
-        header {
-            position: sticky;
-            top: 0;
-            z-index: 50;
-            background-color: var(--bg-base);
-            border-bottom: 1px solid var(--border-color);
-            padding: 12px 24px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 20px;
-        }
-
-        .header-brand {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            min-width: fit-content;
-        }
-
-        .logo {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid var(--accent);
-        }
-
-        .brand-text h1 {
-            font-size: 20px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-        }
-
-        .brand-text p {
-            font-size: 13px;
-            color: var(--accent);
-            margin-top: 2px;
-            font-weight: 500;
-        }
-
-        /* Barra de Pesquisa Centralizada */
-        .search-container {
-            flex-grow: 1;
-            max-width: 600px;
-            display: flex;
-            align-items: center;
-            order: 2;
-        }
-
-        .search-box {
-            display: flex;
-            width: 100%;
-            background-color: var(--bg-surface);
-            border: 1px solid var(--border-color);
-            border-radius: 40px;
-            overflow: hidden;
-            transition: border-color 0.2s;
-        }
-
-        .search-box:focus-within {
-            border-color: var(--text-secondary);
-        }
-
-        .search-input {
-            flex-grow: 1;
-            background: transparent;
-            border: none;
-            color: var(--text-primary);
-            padding: 12px 16px;
-            font-size: 16px;
-            outline: none;
-        }
-
-        .search-input::placeholder {
-            color: var(--text-secondary);
-        }
-
-        .search-btn {
-            background-color: var(--bg-elevated);
-            border: none;
-            border-left: 1px solid var(--border-color);
-            padding: 0 24px;
-            color: var(--text-primary);
-            cursor: pointer;
-            transition: background-color 0.2s;
-            font-size: 16px;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         
-        .search-btn:hover {
-             background-color: #4d4d4d;
-        }
-
-        /* Layout de Conteúdo (Sidebar + Grelha) */
-        .main-layout {
-            display: flex;
-            max-width: 1600px;
-            margin: 0 auto;
-        }
-
-        /* Sidebar de Categorias */
-        .sidebar {
-            width: 240px;
-            flex-shrink: 0;
-            padding: 24px 16px;
-            border-right: 1px solid var(--border-color);
-            height: calc(100vh - 75px);
-            position: sticky;
-            top: 75px;
-            overflow-y: auto;
-        }
-
-        .sidebar-title {
-            font-size: 16px;
-            font-weight: 700;
-            margin-bottom: 12px;
-            padding: 0 12px;
-            color: var(--text-primary);
-        }
-
-        .category-list {
-            list-style: none;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .category-item {
-            padding: 10px 12px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--text-primary);
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            transition: background-color 0.2s;
-        }
-
-        .category-item i {
-            font-size: 18px;
-            color: var(--text-secondary);
-            width: 24px;
-            text-align: center;
-        }
-
-        .category-item:hover {
-            background-color: var(--bg-surface);
-        }
-
-        .category-item.active {
-            background-color: var(--bg-surface);
-            font-weight: 700;
-            color: var(--accent);
-        }
-
-        .category-item.active i {
-            color: var(--accent);
-        }
-
-        /* Área de Vídeos */
-        .content-area {
-            flex-grow: 1;
-            padding: 24px;
-            overflow-x: hidden;
-        }
-
-        .stats-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-            flex-wrap: wrap;
-            gap: 12px;
-            background-color: var(--bg-surface);
-            padding: 12px 20px;
-            border-radius: 12px;
-        }
-
-        .stats-info {
-            font-size: 15px;
-            color: var(--text-secondary);
-        }
-
-        .stats-info span {
-            color: var(--text-primary);
-            font-weight: 700;
-        }
-
-        .video-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-            row-gap: 32px;
-        }
-
-        /* Card de Vídeo Moderno */
-        .video-card {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            cursor: pointer;
-        }
-
-        .thumbnail-wrapper {
-            position: relative;
-            width: 100%;
-            border-radius: 12px;
-            overflow: hidden;
-            aspect-ratio: 16/9;
-            background-color: var(--bg-surface);
-        }
-
-        .thumbnail {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.3s ease;
-        }
-
-        .video-card:hover .thumbnail {
-            transform: scale(1.03);
-        }
-
-        .video-info {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .video-title-wrap {
-            display: flex;
-            gap: 12px;
-            align-items: flex-start;
-        }
-
-        .ref-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background-color: var(--bg-surface);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 11px;
-            font-weight: 700;
-            color: var(--accent);
-            flex-shrink: 0;
-            border: 1px solid var(--border-color);
-        }
-
-        .video-title {
-            font-size: 16px;
-            font-weight: 500;
-            color: var(--text-primary);
-            line-height: 1.4;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .video-category {
-            font-size: 13px;
-            color: var(--text-secondary);
-            padding-left: 48px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-top: 4px;
-        }
-
-        /* Botões de Ação no Card */
-        .card-actions {
-            display: flex;
-            gap: 8px;
-            padding-left: 48px;
-            margin-top: 8px;
-        }
-
-        .btn-action {
-            padding: 10px 14px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 700;
-            border: none;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: all 0.2s;
-            flex: 1;
-        }
-
-        .btn-watch {
-            background-color: var(--bg-surface);
-            color: var(--text-primary);
-            flex: 0.5;
-        }
-
-        .btn-watch:hover {
-            background-color: var(--bg-elevated);
-        }
-
-        .btn-select {
-            background-color: #2a2a2a;
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-        }
-
-        .btn-select.selected {
-            background-color: var(--accent);
-            color: var(--accent-text);
-            border-color: var(--accent);
-        }
-
-        /* ========================================================
-           BARRA GIGANTE DO CARRINHO (MERCADO LIVRE/WHATSAPP)
-           ======================================================== */
-        .giant-checkout-bar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background-color: #111111;
-            border-top: 4px solid var(--mercado-livre);
-            padding: 16px 20px 24px 20px;
-            z-index: 999;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 16px;
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.9);
-            transform: translateY(120%);
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        .giant-checkout-bar.show {
-            transform: translateY(0);
-        }
-
-        .cart-title {
-            font-size: 22px;
-            font-weight: 700;
-            color: #fff;
-            text-align: center;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .cart-title i {
-            color: var(--accent);
-            font-size: 26px;
-        }
-
-        .cart-count-number {
-            color: var(--accent);
-            font-size: 32px;
-            font-weight: 900;
-            padding: 0 6px;
-            display: inline-block;
-        }
-
-        .btn-giant-whatsapp {
-            background-color: var(--whatsapp-green);
-            color: #fff;
-            border: none;
-            width: 100%;
-            max-width: 800px;
-            padding: 16px 20px;
-            border-radius: 16px;
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            box-shadow: 0 8px 25px rgba(37, 211, 102, 0.4);
-            animation: pulse-green 2s infinite;
-        }
+        html { scroll-behavior: smooth; overflow-x: hidden; max-width: 100vw; }
+        body { font-family: 'DM Sans', -apple-system, sans-serif; background: radial-gradient(1200px 600px at 15% -10%, rgba(255,209,0,0.06), transparent 60%), var(--bg-base); color: var(--text-hi); padding-bottom: 180px; overflow-x: hidden; width: 100%; max-width: 100vw; -webkit-font-smoothing: antialiased; }
         
-        .btn-main-text {
-            font-size: 22px;
-            font-weight: 900;
-            text-transform: uppercase;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .btn-sub-text {
-            font-size: 13px;
-            font-weight: 500;
-            background: rgba(0,0,0,0.2);
-            padding: 4px 14px;
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .btn-giant-whatsapp i.fa-whatsapp {
-            font-size: 28px;
-        }
-
-        /* Animações Mágicas de Conversão */
-        @keyframes pulse-green {
-            0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); transform: scale(1); }
-            50% { transform: scale(1.02); }
-            70% { box-shadow: 0 0 0 15px rgba(37, 211, 102, 0); transform: scale(1); }
-            100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); transform: scale(1); }
-        }
-
-        .pop-animation {
-            animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        @keyframes pop {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.8); color: #fff; }
-            100% { transform: scale(1); }
-        }
-
-        /* Modal do Player */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0,0,0,0.95);
-            z-index: 2000;
-            display: none;
-            justify-content: center;
-            align-items: center;
-            padding: 10px;
-        }
-
-        .player-container {
-            width: 100%;
-            max-width: 1000px;
-            background-color: #000;
-            border-radius: 12px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .player-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%);
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 10;
-        }
-
-        .btn-open-yt {
-            background-color: #ff0000;
-            color: white;
-            text-decoration: none;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            border: 1px solid #ff0000;
-        }
-
-        .btn-close-modal {
-            background: rgba(255,255,255,0.2);
-            border: none;
-            color: white;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-        }
-
-        .video-wrapper {
-            position: relative;
-            padding-bottom: 56.25%; /* 16:9 */
-            height: 0;
-            background: #111;
-        }
-
-        .video-wrapper iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: 0;
-            z-index: 5;
-        }
+        .app-header { position: sticky; top: 0; z-index: 60; backdrop-filter: saturate(140%) blur(18px); -webkit-backdrop-filter: saturate(140%) blur(18px); background: rgba(11,11,13,0.85); border-bottom: 1px solid var(--line); width: 100%; }
+        .header-inner { max-width: 1600px; margin: 0 auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
         
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-secondary);
-            grid-column: 1 / -1;
-            display: none;
-        }
+        @media (min-width: 769px) { .header-inner { display: grid; grid-template-columns: auto 1fr auto; gap: 24px; padding: 14px 24px; } }
+
+        .brand { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 10px; }
+        .brand-meta-left { display: flex; align-items: center; gap: 10px; }
+        .brand-logo-wrap { width: 38px; height: 38px; border-radius: 10px; background: #1a1a1f; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--line-strong); }
+        .brand-logo-wrap img { width: 100%; height: 100%; object-fit: cover; }
+        .brand-logo-wrap .fallback { color: var(--krb-yellow); font-family: 'Sora'; font-weight: 800; font-size: 16px; }
+        .brand-text h1 { font-family: 'Sora'; font-size: 16px; font-weight: 700; color: var(--text-hi); }
+        .brand-text h1 span.k { color: var(--krb-yellow); }
+        .brand-text .subtitle { font-size: 11px; color: var(--text-lo); margin-top: 1px; }
         
-        .empty-state i {
-            font-size: 64px;
-            margin-bottom: 16px;
-            opacity: 0.5;
+        .search-wrap { width: 100%; }
+        .search-box { display: flex; align-items: center; gap: 8px; background: var(--bg-surface); border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; }
+        .search-input { flex: 1; background: transparent; border: none; outline: none; color: var(--text-hi); font-size: 14px; font-weight: 500; min-width: 0; }
+        .search-clear { display: none; background: transparent; border: none; cursor: pointer; color: var(--text-lo); }
+        .kbd { display: none; }
+        
+        @media (min-width: 769px) {
+            .search-wrap { max-width: 450px; justify-self: center; }
+            .kbd { display: inline-flex; font-family: 'Sora'; font-size: 10px; padding: 4px 7px; border-radius: 6px; background: var(--bg-elevated); border: 1px solid var(--line-strong); color: var(--text-md); }
+            .brand { width: auto; }
         }
 
-        /* Responsividade Extrema para Mobile */
-        @media (max-width: 768px) {
-            header {
-                flex-direction: column;
-                align-items: stretch;
-                padding: 16px;
-                gap: 16px;
-            }
+        .header-actions { display: flex; gap: 8px; align-items: center; }
+        .icon-btn { position: relative; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; background: var(--bg-surface); border: 1px solid var(--line); color: var(--text-md); cursor: pointer; }
+        .icon-btn .badge { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; border-radius: 999px; background: var(--krb-yellow); color: #000; font-size: 10px; font-weight: 800; display: none; align-items: center; justify-content: center; }
+        .icon-btn.has-items .badge { display: inline-flex; }
+        
+        .stats-strip { max-width: 1600px; margin: 0 auto; padding: 6px 16px 0; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--text-md); }
+        .stats-strip .stat b { color: var(--text-hi); }
+        
+        .layout { max-width: 1600px; margin: 0 auto; padding: 12px; display: grid; grid-template-columns: 1fr; gap: 14px; }
+        @media (min-width: 769px) { .layout { grid-template-columns: 240px 1fr; padding: 20px 24px; gap: 24px; } }
 
-            .header-brand {
-                justify-content: space-between;
-            }
-            
-            .brand-text p {
-                display: block;
-                font-size: 13px;
-            }
+        .sidebar { position: fixed; top: 0; left: 0; width: 260px; height: 100dvh; background: var(--bg-base); padding: 24px 14px; transform: translateX(-105%); transition: transform 0.25s ease; z-index: 200; box-shadow: 20px 0 40px rgba(0,0,0,0.8); }
+        .sidebar.open { transform: translateX(0); }
+        .sidebar-title { font-family: 'Sora'; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-lo); padding: 0 12px 8px; }
+        .cat-list { list-style: none; display: flex; flex-direction: column; gap: 2px; max-height: calc(100vh - 100px); overflow-y: auto; }
+        .cat-item { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 8px; font-size: 14px; font-weight: 500; color: var(--text-md); cursor: pointer; position: relative; }
+        .cat-item.active { background: var(--bg-surface); color: var(--text-hi); }
+        .cat-item.active::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; background: var(--krb-yellow); }
+        .cat-icon { color: var(--text-lo); width: 18px; text-align: center; }
+        .cat-item.active .cat-icon { color: var(--krb-yellow); }
+        
+        @media (min-width: 769px) { .sidebar { position: sticky; top: 96px; height: calc(100vh - 120px); transform: translateX(0); z-index: 10; box-shadow: none; padding: 0; background: transparent; } .cat-list { max-height: none; } }
 
-            .main-layout {
-                flex-direction: column;
-            }
+        .drawer-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 150; display: none; }
+        .drawer-backdrop.show { display: block; }
 
-            /* Sidebar vira barra de arrastar no mobile */
-            .sidebar {
-                width: 100%;
-                height: auto;
-                padding: 12px 16px;
-                border-right: none;
-                border-bottom: 1px solid var(--border-color);
-                position: relative;
-                top: 0;
-                display: flex;
-                flex-direction: row;
-                overflow-x: auto;
-                gap: 12px;
-            }
-            
-            .sidebar::-webkit-scrollbar {
-                display: none;
-            }
+        .pack-promo-banner { background: linear-gradient(90deg, #ffd100, #ff9900); color: #000; padding: 10px; border-radius: 10px; margin-bottom: 12px; font-family: 'Sora'; font-weight: 700; font-size: 11px; text-align: center; line-height: 1.3; }
+        @media (min-width: 769px) { .pack-promo-banner { font-size: 13px; padding: 12px; text-align: left; display: flex; justify-content: space-between; } }
 
-            .sidebar-title {
-                display: none;
-            }
+        .hero { padding: 16px; border-radius: var(--radius-md); background: #131316; border: 1px solid var(--line); margin-bottom: 12px; text-align: center; overflow: hidden; }
+        .hero-eyebrow { font-family: 'Sora'; font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--krb-yellow); padding: 4px 8px; border-radius: 999px; background: rgba(255,209,0,0.1); margin-bottom: 8px; display: inline-flex; }
+        .hero-title { font-size: 18px; font-weight: 800; font-family: 'Sora'; color: var(--text-hi); word-break: break-word; }
+        .hero-title .hi { color: var(--krb-yellow); }
+        .hero-cta { margin-top: 12px; display: flex; justify-content: center; }
+        @media (min-width: 769px) { .hero { padding: 24px; text-align: left; margin-bottom: 20px; } .hero-title { font-size: 32px; } .hero-cta { justify-content: flex-start; } }
 
-            .category-list {
-                flex-direction: row;
-            }
+        .toolbar { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+        .toolbar-left h2 { font-size: 18px; font-weight: 700; font-family: 'Sora'; }
+        .toolbar-left .count { font-size: 12px; color: var(--text-lo); }
+        
+        .toolbar-right { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; }
+        .chip { flex: 1; text-align: center; padding: 8px; border-radius: 6px; background: var(--bg-surface); color: var(--text-md); border: 1px solid var(--line); font-size: 12px; font-weight: 600; cursor: pointer; }
+        .chip.active { background: var(--krb-yellow); color: #000; border-color: var(--krb-yellow); }
+        .sort-select { flex: 1 1 100%; width: 100%; background: var(--bg-surface); color: var(--text-hi); border: 1px solid var(--line); padding: 8px; border-radius: 6px; cursor: pointer; font-size: 12px; margin-top: 2px; }
+        
+        @media (min-width: 769px) { .toolbar { flex-direction: row; align-items: center; justify-content: space-between; } .toolbar-right { width: auto; flex-wrap: nowrap; } .chip { flex: none; padding: 8px 12px; border-radius: 999px; } .sort-select { flex: none; width: auto; margin-top: 0; } }
 
-            .category-item {
-                background-color: var(--bg-surface);
-                border-radius: 20px;
-                padding: 10px 20px;
-                white-space: nowrap;
-                font-size: 15px;
-            }
+        .video-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 4px; }
+        @media (min-width: 600px) { .video-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; } }
 
-            .content-area {
-                padding: 16px;
-            }
+        .card { display: flex; flex-direction: column; height: 100%; padding: 10px; border-radius: 12px; background: var(--bg-surface); border: 1px solid var(--line); box-shadow: var(--shadow-card); position: relative; }
+        .thumb { position: relative; width: 100%; aspect-ratio: 16/9; border-radius: 8px; overflow: hidden; background: #000; cursor: pointer; }
+        .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        
+        .badges { position: absolute; top: 6px; left: 6px; display: flex; gap: 4px; z-index: 2; }
+        .badge-tag { font-family: 'Sora'; font-size: 9px; font-weight: 800; padding: 3px 6px; border-radius: 4px; background: rgba(0,0,0,0.75); color: var(--text-hi); }
+        .badge-tag.new { background: var(--krb-yellow); color: #000; }
+        
+        .fav-btn { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; border-radius: 50%; background: rgba(0,0,0,0.6); color: var(--text-md); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 12px; z-index: 3; }
+        .fav-btn.active { color: #ff4d5e; }
+        .play-fab { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 36px; height: 36px; background: var(--krb-yellow); color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; opacity: 0.85; pointer-events: none; }
+        
+        .card-title { font-family: 'Sora'; font-weight: 600; font-size: 12px; line-height: 1.35; margin: 10px 0 6px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 32px; color: var(--text-hi); text-align: left; word-break: break-word; }
+        .card-meta { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-lo); margin-top: auto; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+        .card-meta .code { color: var(--krb-yellow); font-weight: 700; }
+        
+        .card-actions { display: flex; gap: 4px; margin-top: 8px; width: 100%; }
+        
+        .btn-action { width: 100%; padding: 10px 4px; border-radius: 8px; font-family: 'Sora'; font-weight: 700; font-size: 12px; border: 1px solid var(--line-strong); background: var(--bg-elevated); color: var(--text-hi); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.15s ease; }
+        .btn-action.add.selected { background: var(--krb-yellow) !important; color: #000 !important; border-color: var(--krb-yellow) !important; }
 
-            .video-grid {
-                grid-template-columns: 1fr;
-                gap: 24px;
-            }
-            
-            .stats-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .btn-giant-whatsapp {
-                padding: 16px;
-            }
-            
-            .btn-main-text {
-                font-size: 18px;
-            }
-
-            .cart-title {
-                font-size: 20px;
-            }
+        @media (min-width: 769px) {
+            .card { padding: 12px; } .card-title { font-size: 14px; height: 38px; } .btn-action { padding: 12px; font-size: 13px; }
         }
+
+        .empty { grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: var(--text-md); display: none; }
+        
+        .cart-container { position: fixed; bottom: 0; left: 0; right: 0; z-index: 900; display: none; flex-direction: column; padding: 12px 14px calc(12px + env(safe-area-inset-bottom)); background: #131316; border-top: 1px solid var(--line-strong); box-shadow: 0 -10px 30px rgba(0,0,0,0.9); }
+        .pack-counter-balloon { background: var(--bg-elevated); border: 1px solid var(--line); padding: 6px 10px; border-radius: 6px; font-size: 11px; font-family: 'Sora'; font-weight: 600; text-align: center; margin-bottom: 6px; width: 100%; }
+        .pack-counter-balloon b { color: var(--krb-yellow); }
+        
+        .cart-fab { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 10px; }
+        .cart-main-clickable { display: flex; align-items: center; gap: 8px; text-align: left; cursor: pointer; }
+        .cart-fab .cart-ico { width: 34px; height: 34px; border-radius: 50%; background: var(--krb-yellow); color: #000; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+        .cart-fab .cart-txt .top { font-family: 'Sora'; font-weight: 700; font-size: 12px; color: var(--text-hi); }
+        .cart-fab .cart-txt .bot { font-size: 10px; color: var(--text-lo); }
+        .cart-fab .go-btn { background: var(--wa); color: #fff; padding: 8px 12px; border-radius: 30px; font-family: 'Sora'; font-weight: 700; font-size: 12px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+
+        @media (min-width: 769px) { .cart-container { bottom: 24px; right: 24px; left: auto; width: 320px; border-radius: 12px; border: 1px solid var(--line-strong); padding: 12px; background: var(--bg-elevated); } }
+
+        .toast { position: fixed; top: 14px; left: 50%; transform: translateX(-50%) translateY(-20px); background: var(--bg-elevated); color: var(--text-hi); padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; border: 1px solid var(--line-strong); opacity: 0; transition: all 0.2s ease; z-index: 3000; }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .toast i { color: var(--krb-yellow); margin-right: 4px; }
+        
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.92); backdrop-filter: blur(8px); z-index: 2000; display: none; justify-content: center; align-items: center; padding: 10px; }
+        .player-shell { width: 100%; max-width: 840px; background: #000; border-radius: 10px; overflow: hidden; position: relative; border: 1px solid var(--line-strong); }
+        .player-header { position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; padding: 8px; z-index: 10; }
+        .btn-close-modal { width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,0.2); border: none; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .video-wrapper { position: relative; padding-bottom: 56.25%; height: 0; background: #000; }
+        .video-wrapper iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
     </style>
 </head>
 <body>
-
-    <header>
-        <div class="header-brand">
-            <img class="logo" id="logo-img" alt="Logo">
-            <div class="brand-text">
-                <h1>Catálogo de Amostras</h1>
-                <p>Toque em "Adicionar" para pedir os vídeos</p>
+    <header class="app-header">
+        <div class="header-inner">
+            <div class="brand">
+                <div class="brand-meta-left">
+                    <button class="icon-btn mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
+                    <div class="brand-logo-wrap"><img id="logo-img" alt="KRB Logo"><span class="fallback" id="logo-fallback" style="display:none;">K</span></div>
+                    <div class="brand-text"><h1><span class="k">KRB</span> Catálogo<span class="tag">Oficial</span></h1><div class="subtitle">Playbacks Premium</div></div>
+                </div>
+                <div class="header-actions">
+                    <button class="icon-btn" id="favToggleBtn" aria-label="Favoritos"><i class="fa-regular fa-heart"></i><span class="badge" id="favBadge">0</span></button>
+                    <button class="icon-btn" id="cartToggleBtn" aria-label="Carrinho"><i class="fa-solid fa-cart-shopping"></i><span class="badge" id="cartBadge">0</span></button>
+                </div>
+            </div>
+            <div class="search-wrap">
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="searchInput" class="search-input" placeholder="Pesquisar música ou código...">
+                    <button class="search-clear" id="searchClear"><i class="fa-solid fa-xmark"></i></button>
+                    <span class="kbd">Ctrl K</span>
+                </div>
             </div>
         </div>
-
-        <div class="search-container">
-            <div class="search-box">
-                <input type="text" id="searchInput" class="search-input" placeholder="Pesquisar por título ou #ref..." autocomplete="off">
-                <button class="search-btn" id="searchBtn"><i class="fa-solid fa-magnifying-glass"></i></button>
-            </div>
+        <div class="stats-strip">
+            <span class="stat"><b id="statVideos">0</b> playbacks</span>
+            <span class="stat"><b id="statCategories">0</b> pastas</span>
         </div>
     </header>
 
-    <div class="main-layout">
-        <aside class="sidebar">
-            <h2 class="sidebar-title">Navegar por</h2>
-            <ul class="category-list" id="categoryList">
-                <!-- Gerado por JS -->
-            </ul>
-        </aside>
-
-        <main class="content-area">
-            <div class="stats-header">
-                <div class="stats-info">A mostrar <span id="countDisplay">0</span> opções de vídeo</div>
+    <div class="drawer-backdrop" id="drawerBackdrop"></div>
+    <div class="layout">
+        <aside class="sidebar" id="sidebar"><div class="sidebar-title">Categorias</div><ul class="cat-list" id="categoryList"></ul></aside>
+        <main class="content">
+            <div class="pack-promo-banner">
+                <span><i class="fa-solid fa-music"></i> Catálogo de Playbacks</span>
+                <span>R$ 10,00 por Playback</span>
             </div>
-
-            <div class="video-grid" id="videoGrid">
-                <!-- Gerado por JS -->
+            <section class="hero">
+                <span class="hero-eyebrow"><i class="fa-solid fa-crown"></i> KRB Playbacks</span>
+                <h2 class="hero-title">Mais de <span class="hi" id="heroCount">0</span> arquivos de alta qualidade.</h2>
+                <div class="hero-cta"><button class="btn btn-primary" id="ctaExplore"><i class="fa-solid fa-compact-disc"></i> Começar a Explorar</button></div>
+            </section>
+            <div class="toolbar">
+                <div class="toolbar-left"><h2 id="sectionTitle">Todos os vídeos</h2><span class="count">— <b id="countDisplay">0</b> cadastrados</span></div>
+                <div class="toolbar-right">
+                    <button class="chip" id="chipFav"><i class="fa-solid fa-heart"></i> Favoritos</button>
+                    <button class="chip" id="chipNew"><i class="fa-solid fa-fire"></i> Novidades</button>
+                    <select class="sort-select" id="sortSelect">
+                        <option value="recent">Mais recentes</option>
+                        <option value="oldest">Mais antigos</option>
+                        <option value="az">Ordem A → Z</option>
+                    </select>
+                </div>
             </div>
-            
-            <div class="empty-state" id="emptyState">
-                <i class="fa-solid fa-video-slash"></i>
-                <h3>Nenhum vídeo encontrado.</h3>
-                <p>Tente procurar por outras palavras.</p>
-            </div>
+            <div class="video-grid" id="videoGrid"></div>
+            <div class="empty" id="emptyState"><i class="fa-solid fa-video-slash"></i><h3>Nenhuma música encontrada</h3></div>
         </main>
     </div>
 
-    <!-- ==========================================
-         CARRINHO GIGANTE FIXO NO FUNDO 
-         ========================================== -->
-    <div class="giant-checkout-bar" id="giantCart">
-        <div class="cart-title">
-            <i class="fa-solid fa-cart-shopping"></i> Carrinho: 
-            <span class="cart-count-number" id="giantCartCount">0</span> vídeos
+    <div class="cart-container" id="cartContainer">
+        <div class="pack-counter-balloon" id="packBalloon">
+            <span id="packBalloonText">Selecione músicas</span>
         </div>
-        <button class="btn-giant-whatsapp" onclick="sendOrder()">
-            <div class="btn-main-text">
-                <i class="fa-brands fa-whatsapp"></i> Comprar (Mercado Livre)
+        <div class="cart-fab">
+            <div class="cart-main-clickable" onclick="sendOrder()">
+                <div class="cart-ico"><i class="fa-solid fa-basket-shopping"></i></div>
+                <div class="cart-txt"><span class="top"><span id="cartFabCount">0</span> selecionadas</span><span class="bot">Clique para finalizar</span></div>
             </div>
-            <div class="btn-sub-text">
-                <i class="fa-solid fa-shield-halved"></i> O pedido será enviado via WhatsApp
-            </div>
-        </button>
+            <button class="go-btn" onclick="sendOrder()">Pedir via WhatsApp <i class="fa-brands fa-whatsapp"></i></button>
+        </div>
     </div>
 
-    <!-- Player Modal -->
+    <div class="toast" id="toast"><i class="fa-solid fa-circle-check"></i><span id="toastMsg">Adicionado!</span></div>
+
     <div class="modal-overlay" id="playerModal" onclick="closePlayer()">
-        <div class="player-container" onclick="event.stopPropagation()">
-            <div class="player-header">
-                <a id="btnOpenYoutube" href="#" target="_blank" class="btn-open-yt"><i class="fa-brands fa-youtube"></i> Abrir no YouTube</a>
-                <button class="btn-close-modal" onclick="closePlayer()"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="video-wrapper">
-                <iframe id="videoIframe" src="" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
-            </div>
+        <div class="player-shell" onclick="event.stopPropagation()">
+            <div class="player-header"><div></div><button class="btn-close-modal" onclick="closePlayer()"><i class="fa-solid fa-xmark"></i></button></div>
+            <div class="video-wrapper"><iframe id="videoIframe" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe></div>
         </div>
     </div>
 
     <script>
-        // Dados Injetados
-        const videosData = DADOS_VIDEOS;
-        const playlists = DADOS_PLAYLISTS;
-        const zapNumber = "NUMERO_WHATSAPP";
-        const logoB64 = "LOGO_BASE64_PLACEHOLDER";
+        const videosData = __DADOS_VIDEOS__; const playlists  = __DADOS_PLAYLISTS__;
+        const zapNumber  = "__NUMERO_WHATSAPP__"; const logoB64    = "__LOGO_BASE64_PLACEHOLDER__";
 
-        if(logoB64) {
-            document.getElementById('logo-img').src = logoB64;
-        } else {
-            document.getElementById('logo-img').style.display = 'none';
-        }
+        (function setupLogo() {
+            const img = document.getElementById('logo-img'); const fb  = document.getElementById('logo-fallback');
+            if (logoB64 && logoB64.length > 50) { img.src = logoB64; img.onerror = () => { img.style.display = 'none'; fb.style.display = 'block'; }; }
+            else { img.style.display = 'none'; fb.style.display = 'block'; }
+        })();
 
-        // Estado da Aplicação
-        let currentCategory = "Todos";
-        let searchQuery = "";
+        let currentCategory = "Todos", searchQuery = "", sortMode = "recent", displayLimit = 40;
         const selectedRefs = new Set();
-        let displayLimit = 30; // Paginação inicial
+        
+        function loadLocalSafely(key) { try { return JSON.parse(localStorage.getItem(key) || "[]"); } catch (e) { return []; } }
+        function saveLocalSafely(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
+        const favRefs = new Set(loadLocalSafely('krb_favs'));
+        
+        const NEW_THRESHOLD = Math.max(1, Math.floor(videosData.length * 0.05));
+        function refIndex(ref) { return parseInt(String(ref).replace(/[^0-9]/g, ''), 10) || 0; }
+        function isNew(v) { return refIndex(v.ref) <= NEW_THRESHOLD; }
+        
+        function escapeHtml(s) { return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+        function normalizeString(str) { return (str||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
 
-        // Elementos DOM
-        const categoryListEl = document.getElementById('categoryList');
-        const videoGridEl = document.getElementById('videoGrid');
-        const searchInput = document.getElementById('searchInput');
-        const countDisplay = document.getElementById('countDisplay');
-        const giantCart = document.getElementById('giantCart');
-        const giantCartCount = document.getElementById('giantCartCount');
-        const emptyState = document.getElementById('emptyState');
+        document.getElementById('statVideos').textContent = videosData.length;
+        document.getElementById('statCategories').textContent = playlists.length;
+        document.getElementById('heroCount').textContent = videosData.length;
 
-        // Função para remover acentos e facilitar a busca
-        function normalizeString(str) {
-            if (!str) return "";
-            return str.toString().toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g, "");
-        }
-
-        // 1. Renderiza a Sidebar de Categorias
         function renderCategories() {
-            categoryListEl.innerHTML = '';
-            
-            // Item "Todos"
-            const liTodos = document.createElement('li');
-            liTodos.className = `category-item ${currentCategory === 'Todos' ? 'active' : ''}`;
-            liTodos.innerHTML = `<i class="fa-solid fa-border-all"></i> Tudo`;
-            liTodos.onclick = () => {
-                currentCategory = "Todos";
-                renderCategories();
-                filterAndRenderVideos();
-            };
-            categoryListEl.appendChild(liTodos);
+            const list = document.getElementById('categoryList');
+            let items = [{ id: "Todos", label: "Todos os vídeos", icon: "fa-solid fa-border-all" }, { id: "__FAV__", label: "Meus Favoritos", icon: "fa-solid fa-heart" }, { id: "__NEW__", label: "Novidades", icon: "fa-solid fa-fire" }];
+            playlists.forEach(pl => items.push({ id: pl, label: pl, icon: "fa-solid fa-compact-disc" }));
+            list.innerHTML = items.map(it => `<li class="cat-item ${currentCategory === it.id ? 'active' : ''}" onclick="selectCategory('${escapeHtml(it.id)}')"><i class="cat-icon ${it.icon}"></i><span style="flex:1">${escapeHtml(it.label)}</span></li>`).join('');
+        }
 
-            // Itens Dinâmicos
-            playlists.forEach(pl => {
-                const li = document.createElement('li');
-                li.className = `category-item ${currentCategory === pl ? 'active' : ''}`;
-                li.innerHTML = `<i class="fa-solid fa-list-ul"></i> ${pl}`;
-                li.onclick = () => {
-                    currentCategory = pl;
-                    renderCategories();
-                    filterAndRenderVideos();
-                };
-                categoryListEl.appendChild(li);
+        function selectCategory(cat) { currentCategory = cat; displayLimit = 40; renderCategories(); filterAndRender(); document.getElementById('sidebar').classList.remove('open'); document.getElementById('drawerBackdrop').classList.remove('show'); document.getElementById('sectionTitle').textContent = (cat === '__FAV__' ? 'Meus Favoritos' : (cat === '__NEW__' ? 'Novidades' : cat)); }
+
+        function getFilteredList() {
+            const q = normalizeString(searchQuery);
+            let list = videosData.filter(v => {
+                let matchCat = (currentCategory === "__FAV__") ? favRefs.has(v.ref) : (currentCategory === "__NEW__") ? isNew(v) : (currentCategory === "Todos" || v.playlist === currentCategory);
+                return matchCat && (!q || normalizeString(v.titulo + " " + v.ref).includes(q));
             });
+            
+            if (sortMode === "recent") list.sort((a, b) => refIndex(a.ref) - refIndex(b.ref));
+            else if (sortMode === "oldest") list.sort((a, b) => refIndex(b.ref) - refIndex(a.ref));
+            else if (sortMode === "az") list.sort((a, b) => a.titulo.localeCompare(b.titulo));
+            return list;
         }
 
-        // 2. Cria o Card de Vídeo
-        function createVideoCard(video) {
-            const isSelected = selectedRefs.has(video.ref);
+        function filterAndRender(appendMode = false) {
+            const list = getFilteredList();
+            document.getElementById('countDisplay').textContent = list.length;
+            const grid = document.getElementById('videoGrid'); const empty = document.getElementById('emptyState');
+            if (list.length === 0) { grid.innerHTML = ''; empty.style.display = 'block'; return; } empty.style.display = 'none';
             
-            return `
-                <div class="video-card">
-                    <div class="thumbnail-wrapper" onclick="openPlayer('${video.youtubeId}', '${video.url}')">
-                        <img class="thumbnail" loading="lazy" src="https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg" alt="${video.titulo}">
-                    </div>
-                    <div class="video-info">
-                        <div class="video-title-wrap">
-                            <div class="ref-avatar">${video.ref.replace('#','')}</div>
-                            <h3 class="video-title" title="${video.titulo}">${video.titulo}</h3>
-                        </div>
-                        <div class="video-category">
-                            <i class="fa-regular fa-folder-open"></i> ${video.playlist}
-                        </div>
-                        <div class="card-actions">
-                            <button class="btn-action btn-watch" onclick="openPlayer('${video.youtubeId}', '${video.url}')">
-                                <i class="fa-solid fa-play"></i> Assistir
-                            </button>
-                            <!-- Botão MUITO claro de adicionar -->
-                            <button class="btn-action btn-select ${isSelected ? 'selected' : ''}" onclick="toggleSelection('${video.ref}', this)">
-                                <i class="fa-solid ${isSelected ? 'fa-check' : 'fa-cart-plus'}"></i> 
-                                ${isSelected ? 'Adicionado' : '🛒 Adicionar'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
+            const startIdx = appendMode ? grid.children.length : 0;
+            const toDisplay = list.slice(startIdx, displayLimit);
+            
+            const cardsHtml = toDisplay.map(v => {
+                const fav = favRefs.has(v.ref), sel = selectedRefs.has(v.ref);
+                return `<div class="card" data-cardref="${escapeHtml(v.ref)}"><div class="thumb" onclick="openPlayer('${escapeHtml(v.youtubeId)}')"><div class="badges">${isNew(v) ? '<span class="badge-tag new">Novo</span>' : ''}<span class="badge-tag">${escapeHtml(v.ref)}</span></div><button class="fav-btn ${fav ? 'active' : ''}" onclick="event.stopPropagation(); toggleFav('${escapeHtml(v.ref)}', this)"><i class="${fav ? 'fa-solid' : 'fa-regular'} fa-heart"></i></button><img loading="lazy" src="https://i.ytimg.com/vi/${escapeHtml(v.youtubeId)}/mqdefault.jpg" onerror="this.src='https://i.ytimg.com/vi/${escapeHtml(v.youtubeId)}/0.jpg'"><div class="play-fab"><i class="fa-solid fa-play"></i></div></div><h3 class="card-title">${escapeHtml(v.titulo)}</h3><div class="card-meta"><span class="code">${escapeHtml(v.ref)}</span></div><div class="card-actions"><button class="btn-action add ${sel ? 'selected' : ''}" onclick="toggleSelection('${escapeHtml(v.ref)}', this)"><i class="fa-solid ${sel ? 'fa-check' : 'fa-cart-plus'}"></i> <span>${sel ? 'Adicionado' : 'Adicionar'}</span></button></div></div>`;
+            }).join('');
+
+            if (appendMode) { grid.insertAdjacentHTML('beforeend', cardsHtml); } 
+            else { grid.innerHTML = cardsHtml; }
         }
 
-        // 3. Filtra e Renderiza a Grelha de Vídeos
-        function filterAndRenderVideos() {
-            // Aplicar Filtros (Categoria E Busca combinados perfeitamente)
-            const normalizedQuery = normalizeString(searchQuery);
-            
-            const filtered = videosData.filter(v => {
-                const matchCategory = currentCategory === "Todos" || v.playlist === currentCategory;
-                
-                const searchTarget = normalizeString(`${v.titulo} ${v.ref} ${v.playlist}`);
-                const matchSearch = !normalizedQuery || searchTarget.includes(normalizedQuery);
-                
-                return matchCategory && matchSearch;
-            });
-
-            // Atualizar UI
-            countDisplay.textContent = filtered.length;
-            
-            if (filtered.length === 0) {
-                videoGridEl.innerHTML = '';
-                emptyState.style.display = 'block';
-            } else {
-                emptyState.style.display = 'none';
-                
-                // Paginação Simples para performance
-                const toDisplay = filtered.slice(0, displayLimit);
-                videoGridEl.innerHTML = toDisplay.map(createVideoCard).join('');
-            }
-        }
-
-        // 4. Lidar com Pesquisa (Em tempo real)
-        searchInput.addEventListener('input', (e) => {
-            searchQuery = e.target.value;
-            displayLimit = 30; // Reseta limite ao pesquisar
-            filterAndRenderVideos();
-        });
-
-        // 5. Lidar com Scroll infinito (Lazy loading de blocos)
         window.addEventListener('scroll', () => {
-            if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500) {
-                displayLimit += 30;
-                filterAndRenderVideos(); // Re-renderiza com mais itens
+            if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 400) {
+                const listCount = getFilteredList().length;
+                const currentCardsCount = document.getElementById('videoGrid').children.length;
+                if (currentCardsCount < listCount) {
+                    displayLimit += 40;
+                    filterAndRender(true);
+                }
             }
         });
 
-        // 6. Seleção e Carrinho (COM ANIMAÇÃO DE PULSAR)
-        window.toggleSelection = function(ref, btnElement) {
+        window.toggleSelection = (ref, btn) => { 
+            const cards = document.querySelectorAll(`[data-cardref="${ref}"] .btn-action.add`);
             if (selectedRefs.has(ref)) {
                 selectedRefs.delete(ref);
-                btnElement.classList.remove('selected');
-                btnElement.innerHTML = `<i class="fa-solid fa-cart-plus"></i> 🛒 Adicionar`;
+                showToast('Removido do pedido'); 
             } else {
                 selectedRefs.add(ref);
-                btnElement.classList.add('selected');
-                btnElement.innerHTML = `<i class="fa-solid fa-check"></i> Adicionado`;
+                showToast('Adicionado ao pedido'); 
             }
-            updateCartUI();
+            
+            cards.forEach(c => {
+                if (selectedRefs.has(ref)) {
+                    c.classList.add('selected');
+                    c.querySelector('i').className = 'fa-solid fa-check';
+                    c.querySelector('span').textContent = 'Adicionado';
+                } else {
+                    c.classList.remove('selected');
+                    c.querySelector('i').className = 'fa-solid fa-cart-plus';
+                    c.querySelector('span').textContent = 'Adicionar';
+                }
+            });
+            updateCart();
         };
-
-        function updateCartUI() {
-            const count = selectedRefs.size;
-            
-            // Verifica se o número mudou para fazer a animação de "pular"
-            if(giantCartCount.textContent != count) {
-                giantCartCount.textContent = count;
-                
-                // Força o reinício da animação removendo e adicionando a classe
-                giantCartCount.classList.remove('pop-animation');
-                void giantCartCount.offsetWidth; // truque de programação para reiniciar a animação
-                giantCartCount.classList.add('pop-animation');
+        
+        window.toggleFav = (ref, btn) => { 
+            favRefs.has(ref) ? favRefs.delete(ref) : favRefs.add(ref); 
+            saveLocalSafely('krb_favs', Array.from(favRefs)); 
+            showToast(favRefs.has(ref) ? 'Adicionado aos Favoritos' : 'Removido'); 
+            document.getElementById('favBadge').textContent = favRefs.size; 
+            if (currentCategory === "__FAV__") filterAndRender();
+            else {
+                const icon = btn.querySelector('i');
+                if (favRefs.has(ref)) { btn.classList.add('active'); icon.className = 'fa-solid fa-heart'; }
+                else { btn.classList.remove('active'); icon.className = 'fa-regular fa-heart'; }
             }
+        };
+        
+        function updateCart() { 
+            const count = selectedRefs.size; 
+            document.getElementById('cartFabCount').textContent = count; 
+            document.getElementById('cartBadge').textContent = count; 
             
-            // Mostra ou esconde a barra gigante
+            const container = document.getElementById('cartContainer');
+            const balloon = document.getElementById('packBalloon');
+            const txt = document.getElementById('packBalloonText');
+
             if (count > 0) {
-                giantCart.classList.add('show');
+                container.style.display = 'flex';
+                balloon.style.display = 'block';
+                
+                // CÁLCULO DIRETO: R$ 10,00 por música
+                const precoTotal = count * 10;
+                txt.innerHTML = `🛒 Total: <b>R$ ${precoTotal.toFixed(2)}</b> (${count} música${count > 1 ? 's' : ''})`;
             } else {
-                giantCart.classList.remove('show');
+                container.style.display = 'none';
+                balloon.style.display = 'none';
             }
         }
 
-        // 7. Ações de Envio Direto para o WhatsApp (Mercado Livre)
-        window.sendOrder = function() {
-            if(selectedRefs.size === 0) return;
-            
-            const list = Array.from(selectedRefs).sort().map(ref => {
-                const v = videosData.find(x => x.ref === ref);
-                return `${v.ref} - ${v.titulo} (${v.playlist})`;
-            }).join('\\n');
-            
-            const mensagem = `Olá! Quero fechar a compra dos seguintes vídeos:\n\n${list}\n\nPor favor, envie-me o link de pagamento do Mercado Livre para finalizarmos de forma segura!`;
-            
-            const text = encodeURIComponent(mensagem);
-            window.open(`https://wa.me/${zapNumber}?text=${text}`, '_blank');
+        window.sendOrder = () => { 
+            if (selectedRefs.size === 0) return; 
+            const count = selectedRefs.size;
+            let precoTotal = count * 10; // VALOR DIRETO NA MENSAGEM DO WHATSAPP
+
+            const list = Array.from(selectedRefs).map(ref => { 
+                const v = videosData.find(x => x.ref === ref); 
+                return v ? `${v.ref} - ${v.titulo}` : ref; 
+            }).join('\n'); 
+
+            let resumoPreco = `Total de Músicas: ${count}\n`;
+            resumoPreco += `💰 Valor Total: R$ ${precoTotal.toFixed(2)}`;
+
+            window.open(`https://wa.me/${zapNumber}?text=${encodeURIComponent('Olá! Quero fechar o meu pedido com os seguintes playbacks:\n\n' + list + '\n\n' + resumoPreco)}`, '_blank'); 
         };
 
-        window.openPlayer = function(id, url) {
-            const modal = document.getElementById('playerModal');
-            const iframe = document.getElementById('videoIframe');
-            const btnYt = document.getElementById('btnOpenYoutube');
-            
-            // Alterado para youtube-nocookie para tentar evitar alguns bloqueios locais (Erro 153)
-            iframe.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`;
-            btnYt.href = url || `https://www.youtube.com/watch?v=${id}`;
-            
-            modal.style.display = 'flex';
-            document.body.style.overflow = 'hidden'; // Impede scroll do site atrás do vídeo
-        };
+        window.openPlayer = (id) => { document.getElementById('videoIframe').src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1`; document.getElementById('playerModal').style.display = 'flex'; };
+        window.closePlayer = () => { document.getElementById('videoIframe').src = ''; document.getElementById('playerModal').style.display = 'none'; };
+        
+        function showToast(msg) { 
+            const t = document.getElementById('toast'); 
+            document.getElementById('toastMsg').textContent = msg; 
+            t.classList.add('show'); 
+            setTimeout(() => t.classList.remove('show'), 1500); 
+        }
 
-        window.closePlayer = function() {
-            const modal = document.getElementById('playerModal');
-            const iframe = document.getElementById('videoIframe');
-            iframe.src = '';
-            modal.style.display = 'none';
-            document.body.style.overflow = 'auto';
-        };
+        document.getElementById('searchInput').addEventListener('input', e => { searchQuery = e.target.value; displayLimit = 40; filterAndRender(); });
+        document.getElementById('sortSelect').addEventListener('change', e => { sortMode = e.target.value; displayLimit = 40; filterAndRender(); });
+        
+        document.getElementById('mobileMenuBtn').addEventListener('click', () => { document.getElementById('sidebar').classList.add('open'); document.getElementById('drawerBackdrop').classList.add('show'); });
+        document.getElementById('drawerBackdrop').addEventListener('click', () => { document.getElementById('sidebar').classList.remove('open'); document.getElementById('drawerBackdrop').classList.remove('show'); });
+        document.getElementById('cartToggleBtn').addEventListener('click', () => { if(selectedRefs.size > 0) sendOrder(); else showToast('Nenhuma música selecionada'); });
+        document.getElementById('favToggleBtn').addEventListener('click', () => selectCategory('__FAV__'));
+        document.getElementById('chipFav').addEventListener('click', () => selectCategory(currentCategory === '__FAV__' ? 'Todos' : '__FAV__'));
+        document.getElementById('chipNew').addEventListener('click', () => selectCategory(currentCategory === '__NEW__' ? 'Todos' : '__NEW__'));
+        document.getElementById('ctaExplore').addEventListener('click', () => { document.getElementById('videoGrid').scrollIntoView({ behavior: 'smooth' }); });
 
-        // Inicialização
-        renderCategories();
-        filterAndRenderVideos();
-
+        renderCategories(); filterAndRender(); document.getElementById('favBadge').textContent = favRefs.size;
     </script>
 </body>
 </html>
-""".replace("DADOS_VIDEOS", dados_json).replace("DADOS_PLAYLISTS", playlists_json).replace("NUMERO_WHATSAPP", SEU_NUMERO_WHATSAPP).replace("LOGO_BASE64_PLACEHOLDER", logo_base64)
+"""
+    html_template = (
+        html_template
+        .replace("__DADOS_VIDEOS__", dados_json)
+        .replace("__DADOS_PLAYLISTS__", playlists_json)
+        .replace("__NUMERO_WHATSAPP__", SEU_NUMERO_WHATSAPP)
+        .replace("__LOGO_BASE64_PLACEHOLDER__", logo_base64)
+    )
 
     try:
         Path(ARQUIVO_SAIDA).write_text(html_template, encoding="utf-8")
-        print(f"\n{Cores.VERDE}=== SUCESSO COGNITIVO! ==={Cores.RESET}")
-        print(f"O seu catálogo unificado foi criado perfeitamente!")
+        print(f"\n{Cores.VERDE}=== SUCESSO! ==={Cores.RESET}")
+        print(f"O seu catálogo com o layout mobile milimetricamente ajustado foi gerado!")
         print(f"Ficheiro gerado: {Cores.NEGRITO}{ARQUIVO_SAIDA}{Cores.RESET}")
-        print(f"Cache de títulos: {Cores.NEGRITO}{ARQUIVO_CACHE_TITULOS}{Cores.RESET}")
     except Exception as e:
         print(f"\n{Cores.VERMELHO}[ERRO]{Cores.RESET} Não foi possível gravar o arquivo HTML: {e}")
 
 def main():
     resultado = processar_catalogo()
-    if not resultado:
-        return
-        
+    if not resultado: return
     videos, playlists = resultado
-    if not videos:
-        print(f"\n{Cores.VERMELHO}[ERRO]{Cores.RESET} Nenhum link do YouTube válido foi processado.")
-        return
-
+    if not videos: return
     gerar_html(videos, playlists)
-
-    print(f"\nTotal de vídeos unificados: {len(videos)}")
-    print(f"Categorias detetadas: {len(playlists)}")
-    print(f"\nDê dois cliques em '{ARQUIVO_SAIDA.name}' para testar o catálogo no navegador!")
-    print(f"{Cores.NEGRITO}{Cores.AZUL}========================================={Cores.RESET}")
+    print(f"\nTotal de vídeos unificados (limpos): {len(videos)}")
     input("\nPressione [ENTER] para fechar...")
 
 if __name__ == "__main__":
