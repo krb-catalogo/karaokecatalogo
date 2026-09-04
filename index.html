@@ -125,6 +125,7 @@
         
         .btn-action { width: 100%; padding: 10px 4px; border-radius: 8px; font-family: 'Sora'; font-weight: 700; font-size: 12px; border: 1px solid var(--line-strong); background: var(--bg-elevated); color: var(--text-hi); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.15s ease; }
         .btn-action.add.selected { background: var(--krb-yellow) !important; color: #000 !important; border-color: var(--krb-yellow) !important; }
+        .btn-action.share { width: 42px; flex: 0 0 42px; }
 
         @media (min-width: 769px) {
             .card { padding: 12px; } .card-title { font-size: 14px; height: 38px; } .btn-action { padding: 12px; font-size: 13px; }
@@ -155,6 +156,39 @@
         .btn-close-modal { width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,0.2); border: none; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .video-wrapper { position: relative; padding-bottom: 56.25%; height: 0; background: #000; }
         .video-wrapper iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+        .order-shell { width: min(620px, 100%); max-height: 88vh; display: flex; flex-direction: column; background: var(--bg-elevated); border: 1px solid var(--line-strong); border-radius: 16px; overflow: hidden; }
+        .order-head, .order-foot { padding: 16px; border-bottom: 1px solid var(--line); }
+        .order-head { display: flex; justify-content: space-between; align-items: center; }
+        .order-head h2 { font: 700 18px 'Sora'; }
+        .order-list { overflow: auto; padding: 8px 16px; }
+        .order-item { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); }
+        .order-item strong { display: block; color: var(--krb-yellow); font-size: 12px; }
+        .order-item span { font-size: 13px; }
+        .order-remove { border: 0; background: transparent; color: #ff6b78; cursor: pointer; padding: 8px; }
+        .order-foot { border: 0; border-top: 1px solid var(--line); }
+        .order-total { display: flex; justify-content: space-between; margin-bottom: 12px; font: 700 16px 'Sora'; }
+        .order-actions { display: grid; grid-template-columns: auto 1fr; gap: 8px; }
+        .btn-clear { background: transparent; color: var(--text-md); border: 1px solid var(--line-strong); padding: 11px 14px; border-radius: 10px; cursor: pointer; }
+        .btn-confirm { background: var(--wa); color: white; border: 0; padding: 11px 14px; border-radius: 10px; font: 700 14px 'Sora'; cursor: pointer; }
+        .how-it-works { margin: 28px 0 110px; padding: 20px; background: var(--bg-card); border: 1px solid var(--line); border-radius: 14px; }
+        .how-it-works h2 { font: 700 18px 'Sora'; margin-bottom: 14px; }
+        .buy-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .buy-step { padding: 14px; background: var(--bg-elevated); border-radius: 10px; color: var(--text-md); font-size: 14px; line-height: 1.45; }
+        .buy-step b { color: var(--text-hi); display: block; margin-bottom: 4px; }
+        @media (max-width: 620px) { .buy-steps { grid-template-columns: 1fr; } .order-item { grid-template-columns: 1fr auto; } .order-item .item-price { display: none; } }
+        .help-fab { position: fixed; right: 16px; bottom: 92px; z-index: 850; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line-strong); background: var(--krb-yellow); color: #000; box-shadow: 0 8px 24px rgba(0,0,0,.4); cursor: pointer; font-size: 18px; }
+        .welcome-shell { width: min(560px, 100%); background: var(--bg-elevated); border: 1px solid var(--line-strong); border-radius: 18px; overflow: hidden; box-shadow: 0 24px 70px rgba(0,0,0,.65); }
+        .welcome-top { padding: 20px 20px 10px; display: flex; justify-content: space-between; align-items: flex-start; }
+        .welcome-top h2 { font: 800 22px 'Sora'; margin-bottom: 4px; }
+        .welcome-top p { color: var(--text-md); font-size: 14px; }
+        .welcome-steps { padding: 10px 20px 18px; display: grid; gap: 10px; }
+        .welcome-step { display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: center; padding: 12px; background: var(--bg-card); border: 1px solid var(--line); border-radius: 10px; }
+        .welcome-number { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: var(--krb-yellow); color: #000; font: 800 14px 'Sora'; }
+        .welcome-step b { display: block; font-size: 14px; margin-bottom: 2px; }
+        .welcome-step span { color: var(--text-md); font-size: 13px; line-height: 1.35; }
+        .welcome-action { padding: 0 20px 20px; }
+        .welcome-action button { width: 100%; padding: 13px; border: 0; border-radius: 10px; background: var(--krb-yellow); color: #000; font: 800 14px 'Sora'; cursor: pointer; }
+        @media (min-width: 769px) { .help-fab { right: 366px; bottom: 32px; } }
     </style>
 </head>
 <body>
@@ -221,15 +255,36 @@
             <span id="packBalloonText">Selecione músicas</span>
         </div>
         <div class="cart-fab">
-            <div class="cart-main-clickable" onclick="sendOrder()">
+            <div class="cart-main-clickable" onclick="openOrderReview()">
                 <div class="cart-ico"><i class="fa-solid fa-basket-shopping"></i></div>
                 <div class="cart-txt"><span class="top"><span id="cartFabCount">0</span> selecionadas</span><span class="bot">Clique para finalizar</span></div>
             </div>
-            <button class="go-btn" onclick="sendOrder()">Pedir via WhatsApp <i class="fa-brands fa-whatsapp"></i></button>
+            <button class="go-btn" onclick="openOrderReview()">Revisar pedido <i class="fa-solid fa-arrow-right"></i></button>
         </div>
     </div>
 
     <div class="toast" id="toast"><i class="fa-solid fa-circle-check"></i><span id="toastMsg">Adicionado!</span></div>
+    <button class="help-fab" onclick="openWelcome()" aria-label="Como comprar" title="Como comprar"><i class="fa-solid fa-question"></i></button>
+
+    <div class="modal-overlay" id="welcomeModal" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
+        <div class="welcome-shell">
+            <div class="welcome-top"><div><h2 id="welcomeTitle">Como comprar</h2><p>É rápido e você confere tudo antes de enviar.</p></div><button class="btn-close-modal" onclick="closeWelcome()" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button></div>
+            <div class="welcome-steps">
+                <div class="welcome-step"><span class="welcome-number">1</span><div><b>Escolha os playbacks</b><span>Use a pesquisa e toque em “Adicionar”.</span></div></div>
+                <div class="welcome-step"><span class="welcome-number">2</span><div><b>Revise o carrinho</b><span>Cada música custa R$ 10,00. Confira a lista e o valor total.</span></div></div>
+                <div class="welcome-step"><span class="welcome-number">3</span><div><b>Finalize no WhatsApp</b><span>Envie o pedido e combine o pagamento e a entrega com a KRB.</span></div></div>
+            </div>
+            <div class="welcome-action"><button onclick="closeWelcome(); document.getElementById('searchInput').focus()">Entendi, começar agora</button></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="orderModal" onclick="closeOrderReview()" role="dialog" aria-modal="true" aria-labelledby="orderTitle">
+        <div class="order-shell" onclick="event.stopPropagation()">
+            <div class="order-head"><h2 id="orderTitle">Confira seu pedido</h2><button class="btn-close-modal" onclick="closeOrderReview()" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button></div>
+            <div class="order-list" id="orderList"></div>
+            <div class="order-foot"><div class="order-total"><span id="orderCount"></span><span id="orderTotal"></span></div><div class="order-actions"><button class="btn-clear" onclick="clearCart()">Limpar</button><button class="btn-confirm" onclick="sendOrder()"><i class="fa-brands fa-whatsapp"></i> Enviar pedido</button></div></div>
+        </div>
+    </div>
 
     <div class="modal-overlay" id="playerModal" onclick="closePlayer()">
         <div class="player-shell" onclick="event.stopPropagation()">
@@ -249,11 +304,14 @@
         })();
 
         let currentCategory = "Todos", searchQuery = "", sortMode = "recent", displayLimit = 40;
-        const selectedRefs = new Set();
+        let selectedRefs;
         
         function loadLocalSafely(key) { try { return JSON.parse(localStorage.getItem(key) || "[]"); } catch (e) { return []; } }
         function saveLocalSafely(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
+        selectedRefs = new Set(loadLocalSafely('krb_cart').filter(ref => videosData.some(v => v.ref === ref)));
         const favRefs = new Set(loadLocalSafely('krb_favs'));
+        const money = value => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        function track(name, params = {}) { if (typeof gtag === 'function') gtag('event', name, params); }
         
         const NEW_THRESHOLD = Math.max(1, Math.floor(videosData.length * 0.05));
         function refIndex(ref) { return parseInt(String(ref).replace(/[^0-9]/g, ''), 10) || 0; }
@@ -299,7 +357,7 @@
             
             const cardsHtml = toDisplay.map(v => {
                 const fav = favRefs.has(v.ref), sel = selectedRefs.has(v.ref);
-                return `<div class="card" data-cardref="${escapeHtml(v.ref)}"><div class="thumb" onclick="openPlayer('${escapeHtml(v.youtubeId)}')"><div class="badges">${isNew(v) ? '<span class="badge-tag new">Novo</span>' : ''}<span class="badge-tag">${escapeHtml(v.ref)}</span></div><button class="fav-btn ${fav ? 'active' : ''}" onclick="event.stopPropagation(); toggleFav('${escapeHtml(v.ref)}', this)"><i class="${fav ? 'fa-solid' : 'fa-regular'} fa-heart"></i></button><img loading="lazy" src="https://i.ytimg.com/vi/${escapeHtml(v.youtubeId)}/mqdefault.jpg" onerror="this.src='https://i.ytimg.com/vi/${escapeHtml(v.youtubeId)}/0.jpg'"><div class="play-fab"><i class="fa-solid fa-play"></i></div></div><h3 class="card-title">${escapeHtml(v.titulo)}</h3><div class="card-meta"><span class="code">${escapeHtml(v.ref)}</span></div><div class="card-actions"><button class="btn-action add ${sel ? 'selected' : ''}" onclick="toggleSelection('${escapeHtml(v.ref)}', this)"><i class="fa-solid ${sel ? 'fa-check' : 'fa-cart-plus'}"></i> <span>${sel ? 'Adicionado' : 'Adicionar'}</span></button></div></div>`;
+                return `<div class="card" data-cardref="${escapeHtml(v.ref)}"><div class="thumb" onclick="openPlayer('${escapeHtml(v.youtubeId)}')"><div class="badges">${isNew(v) ? '<span class="badge-tag new">Novo</span>' : ''}<span class="badge-tag">${escapeHtml(v.ref)}</span></div><button class="fav-btn ${fav ? 'active' : ''}" onclick="event.stopPropagation(); toggleFav('${escapeHtml(v.ref)}', this)"><i class="${fav ? 'fa-solid' : 'fa-regular'} fa-heart"></i></button><img loading="lazy" src="https://i.ytimg.com/vi/${escapeHtml(v.youtubeId)}/mqdefault.jpg" onerror="this.src='https://i.ytimg.com/vi/${escapeHtml(v.youtubeId)}/0.jpg'"><div class="play-fab"><i class="fa-solid fa-play"></i></div></div><h3 class="card-title">${escapeHtml(v.titulo)}</h3><div class="card-meta"><span class="code">${escapeHtml(v.ref)}</span></div><div class="card-actions"><button class="btn-action add ${sel ? 'selected' : ''}" onclick="toggleSelection('${escapeHtml(v.ref)}', this)"><i class="fa-solid ${sel ? 'fa-check' : 'fa-cart-plus'}"></i> <span>${sel ? 'Adicionado' : 'Adicionar'}</span></button><button class="btn-action share" onclick="shareSong('${escapeHtml(v.ref)}')" aria-label="Compartilhar ${escapeHtml(v.ref)}"><i class="fa-solid fa-share-nodes"></i></button></div></div>`;
             }).join('');
 
             if (appendMode) { grid.insertAdjacentHTML('beforeend', cardsHtml); } 
@@ -315,6 +373,8 @@
                     filterAndRender(true);
                 }
             }
+            saveLocalSafely('krb_cart', Array.from(selectedRefs));
+            track(selectedRefs.has(ref) ? 'add_to_cart' : 'remove_from_cart', { item_id: ref, value: 10, currency: 'BRL' });
         });
 
         window.toggleSelection = (ref, btn) => { 
@@ -369,12 +429,28 @@
                 
                 // CÁLCULO DIRETO: R$ 10,00 por música
                 const precoTotal = count * 10;
-                txt.innerHTML = `🛒 Total: <b>R$ ${precoTotal.toFixed(2)}</b> (${count} música${count > 1 ? 's' : ''})`;
+                txt.innerHTML = `🛒 Total: <b>${money(precoTotal)}</b> (${count} música${count > 1 ? 's' : ''})`;
             } else {
                 container.style.display = 'none';
                 balloon.style.display = 'none';
             }
         }
+
+        window.openOrderReview = () => {
+            if (!selectedRefs.size) return showToast('Nenhuma música selecionada');
+            const items = Array.from(selectedRefs).map(ref => videosData.find(v => v.ref === ref)).filter(Boolean);
+            document.getElementById('orderList').innerHTML = items.map(v => `<div class="order-item"><div><strong>${escapeHtml(v.ref)}</strong><span>${escapeHtml(v.titulo)}</span></div><span class="item-price">${money(10)}</span><button class="order-remove" onclick="removeFromReview('${escapeHtml(v.ref)}')" aria-label="Remover ${escapeHtml(v.ref)}"><i class="fa-solid fa-trash"></i></button></div>`).join('');
+            document.getElementById('orderCount').textContent = `${items.length} música${items.length > 1 ? 's' : ''}`;
+            document.getElementById('orderTotal').textContent = money(items.length * 10);
+            document.getElementById('orderModal').style.display = 'flex';
+            track('view_cart', { value: items.length * 10, currency: 'BRL', items: items.map(v => ({ item_id: v.ref, item_name: v.titulo, price: 10 })) });
+        };
+        window.closeOrderReview = () => { document.getElementById('orderModal').style.display = 'none'; };
+        window.removeFromReview = ref => { selectedRefs.delete(ref); saveLocalSafely('krb_cart', Array.from(selectedRefs)); filterAndRender(); updateCart(); selectedRefs.size ? openOrderReview() : closeOrderReview(); };
+        window.clearCart = () => { selectedRefs.clear(); saveLocalSafely('krb_cart', []); closeOrderReview(); filterAndRender(); updateCart(); showToast('Carrinho limpo'); track('clear_cart'); };
+        window.shareSong = async ref => { const v = videosData.find(x => x.ref === ref); const url = `${location.origin}${location.pathname}?musica=${encodeURIComponent(ref)}`; try { if (navigator.share) await navigator.share({ title: v?.titulo || ref, text: `${ref} - ${v?.titulo || 'Playback KRB'}`, url }); else { await navigator.clipboard.writeText(url); showToast('Link copiado'); } track('share', { method: navigator.share ? 'native' : 'copy', item_id: ref }); } catch (e) {} };
+        window.openWelcome = () => { document.getElementById('welcomeModal').style.display = 'flex'; track('view_how_to_buy'); };
+        window.closeWelcome = () => { document.getElementById('welcomeModal').style.display = 'none'; };
 
         window.sendOrder = () => { 
             if (selectedRefs.size === 0) return; 
@@ -386,9 +462,11 @@
                 return v ? `${v.ref} - ${v.titulo}` : ref; 
             }).join('\n'); 
 
-            let resumoPreco = `Total de Músicas: ${count}\n`;
-            resumoPreco += `💰 Valor Total: R$ ${precoTotal.toFixed(2)}`;
+            const orderId = `KRB-${Date.now().toString(36).slice(-5).toUpperCase()}`;
+            let resumoPreco = `Pedido: ${orderId}\nTotal de Músicas: ${count}\nPreço unitário: ${money(10)}\n`;
+            resumoPreco += `💰 Valor Total: ${money(precoTotal)}`;
 
+            track('begin_checkout', { transaction_id: orderId, value: precoTotal, currency: 'BRL', items: Array.from(selectedRefs).map(ref => ({ item_id: ref, price: 10 })) });
             window.open(`https://wa.me/${zapNumber}?text=${encodeURIComponent('Olá! Quero fechar o meu pedido com os seguintes playbacks:\n\n' + list + '\n\n' + resumoPreco)}`, '_blank'); 
         };
 
@@ -402,18 +480,22 @@
             setTimeout(() => t.classList.remove('show'), 1500); 
         }
 
-        document.getElementById('searchInput').addEventListener('input', e => { searchQuery = e.target.value; displayLimit = 40; filterAndRender(); });
+        let searchTrackTimer;
+        document.getElementById('searchInput').addEventListener('input', e => { searchQuery = e.target.value; displayLimit = 40; filterAndRender(); clearTimeout(searchTrackTimer); if (searchQuery.trim().length >= 2) searchTrackTimer = setTimeout(() => track('search', { search_term: searchQuery.trim() }), 700); });
         document.getElementById('sortSelect').addEventListener('change', e => { sortMode = e.target.value; displayLimit = 40; filterAndRender(); });
         
         document.getElementById('mobileMenuBtn').addEventListener('click', () => { document.getElementById('sidebar').classList.add('open'); document.getElementById('drawerBackdrop').classList.add('show'); });
         document.getElementById('drawerBackdrop').addEventListener('click', () => { document.getElementById('sidebar').classList.remove('open'); document.getElementById('drawerBackdrop').classList.remove('show'); });
-        document.getElementById('cartToggleBtn').addEventListener('click', () => { if(selectedRefs.size > 0) sendOrder(); else showToast('Nenhuma música selecionada'); });
+        document.getElementById('cartToggleBtn').addEventListener('click', openOrderReview);
         document.getElementById('favToggleBtn').addEventListener('click', () => selectCategory('__FAV__'));
         document.getElementById('chipFav').addEventListener('click', () => selectCategory(currentCategory === '__FAV__' ? 'Todos' : '__FAV__'));
         document.getElementById('chipNew').addEventListener('click', () => selectCategory(currentCategory === '__NEW__' ? 'Todos' : '__NEW__'));
         document.getElementById('ctaExplore').addEventListener('click', () => { document.getElementById('videoGrid').scrollIntoView({ behavior: 'smooth' }); });
 
-        renderCategories(); filterAndRender(); document.getElementById('favBadge').textContent = favRefs.size;
+        const sharedRef = new URLSearchParams(location.search).get('musica');
+        if (sharedRef && videosData.some(v => v.ref === sharedRef)) { searchQuery = sharedRef; document.getElementById('searchInput').value = sharedRef; track('view_item', { item_id: sharedRef }); }
+        renderCategories(); filterAndRender(); updateCart(); document.getElementById('favBadge').textContent = favRefs.size;
+        if (!sharedRef) openWelcome();
     </script>
 </body>
 </html>
