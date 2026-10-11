@@ -2,7 +2,9 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0b0b0d">
+    <meta name="description" content="Catálogo de playbacks para karaokê: pesquise, monte seu pedido e finalize pelo WhatsApp.">
     <title>Catálogo KRB — Playbacks Premium</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -148,6 +150,184 @@
         .video-wrapper { position: relative; padding-bottom: 56.25%; height: 0; background: #000; }
         .video-wrapper iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
     </style>
+    <style id="krb-polish">
+        :root { --krb-glow: 0 0 0 1px rgba(255,209,0,.35), 0 14px 40px -14px rgba(255,209,0,.28); --ease: cubic-bezier(.2,.7,.2,1); }
+        body { padding-bottom: 120px; }
+        :focus-visible { outline: 2px solid var(--krb-yellow); outline-offset: 2px; }
+        ::selection { background: rgba(255,209,0,.35); }
+        * { scrollbar-width: thin; scrollbar-color: #35353f transparent; }
+        @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; animation: none !important; } }
+
+        /* botões base (faltavam: o botão do topo aparecia sem estilo) */
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 20px; border-radius: 12px; font: 700 14px 'Sora', sans-serif; border: 1px solid var(--line-strong); background: var(--bg-elevated); color: var(--text-hi); cursor: pointer; text-decoration: none; transition: transform .15s var(--ease), background .15s, box-shadow .15s, border-color .15s; }
+        .btn:hover { transform: translateY(-1px); border-color: #4a4a57; }
+        .btn-primary { background: var(--krb-yellow); color: #14110a; border-color: var(--krb-yellow); box-shadow: 0 10px 30px -12px rgba(255,209,0,.6); }
+        .btn-primary:hover { background: var(--krb-yellow-2); border-color: var(--krb-yellow-2); }
+        .btn-ghost { background: transparent; }
+
+        /* cabeçalho */
+        .app-header { background: rgba(11,11,13,.82); }
+        .header-inner { padding: 10px 14px; gap: 10px; }
+        .brand-logo-wrap { width: 40px; height: 40px; border-radius: 11px; flex: none; }
+        .brand-text h1 { font-size: 17px; letter-spacing: -.02em; white-space: nowrap; }
+        .brand-text h1 .tag { color: var(--text-hi); }
+        .brand-text .subtitle { display: none; }
+        .icon-btn { width: 40px; height: 40px; border-radius: 11px; font-size: 15px; transition: background .15s, color .15s, border-color .15s; }
+        .icon-btn:hover { background: var(--bg-hover); color: var(--text-hi); border-color: var(--line-strong); }
+        .icon-btn.has-items { color: var(--krb-yellow); border-color: rgba(255,209,0,.4); }
+        .search-box { padding: 11px 16px; border-radius: 14px; transition: border-color .15s, box-shadow .15s, background .15s; }
+        .search-box:focus-within { border-color: var(--krb-yellow); box-shadow: 0 0 0 3px rgba(255,209,0,.14); background: var(--bg-elevated); }
+        .search-box > i { color: var(--text-lo); }
+        .search-input { font-size: 16px; }
+        .search-clear { width: 24px; height: 24px; border-radius: 50%; background: var(--bg-hover); color: var(--text-md); align-items: center; justify-content: center; font-size: 11px; }
+        .search-clear.show { display: inline-flex; }
+        @media (min-width: 769px) {
+            .brand-text .subtitle { display: block; }
+            .header-inner { padding: 12px 28px; }
+            .search-wrap { max-width: 520px; }
+        }
+
+        /* categorias em fichas (celular) */
+        .cat-chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 14px 12px; max-width: 1600px; margin: 0 auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+        .cat-chips::-webkit-scrollbar { display: none; }
+        .cat-chip { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px; background: var(--bg-surface); border: 1px solid var(--line); color: var(--text-md); font: 600 13px 'DM Sans', sans-serif; cursor: pointer; white-space: nowrap; }
+        .cat-chip.active { background: var(--krb-yellow); border-color: var(--krb-yellow); color: #14110a; font-weight: 700; }
+        .cat-chip em { font-style: normal; font-size: 11px; opacity: .65; }
+        @media (min-width: 769px) { .cat-chips { display: none; } }
+
+        /* menu lateral */
+        .layout { padding: 14px 14px 0; }
+        @media (min-width: 769px) { .layout { grid-template-columns: 264px 1fr; padding: 24px 28px 0; gap: 28px; } }
+        .sidebar { padding: 20px 12px; }
+        .sidebar-title { padding: 0 12px 10px; letter-spacing: .12em; }
+        .cat-item { padding: 10px 12px; border-radius: 10px; transition: background .12s, color .12s; }
+        .cat-item:hover { background: rgba(255,255,255,.04); color: var(--text-hi); }
+        .cat-item.active { background: linear-gradient(90deg, rgba(255,209,0,.12), rgba(255,209,0,.02)); }
+        .cat-item.active::before { left: 0; border-radius: 3px; }
+        .cat-item .n { font-size: 11px; color: var(--text-lo); font-weight: 600; background: var(--bg-surface); border-radius: 999px; padding: 2px 8px; }
+        .cat-item.active .n { color: #14110a; background: var(--krb-yellow); }
+        @media (min-width: 769px) { .cat-list { padding-right: 6px; } }
+
+        /* destaque (hero) */
+        .pack-promo-banner { display: none; }
+        .hero { position: relative; padding: 16px 16px 14px; border-radius: 20px; border: 1px solid var(--line-strong); text-align: left; overflow: hidden;
+                background: radial-gradient(600px 260px at 100% 0, rgba(255,209,0,.18), transparent 60%), linear-gradient(135deg, #17171c 0%, #0f0f12 70%); margin-bottom: 18px; }
+        .hero::after { content: ""; position: absolute; right: -40px; bottom: -60px; width: 220px; height: 220px; border-radius: 50%; border: 28px solid rgba(255,209,0,.05); pointer-events: none; }
+        .hero > * { position: relative; z-index: 1; }
+        .hero-eyebrow { font-size: 10px; letter-spacing: .1em; padding: 4px 9px; margin-bottom: 9px; }
+        .hero-title { font-size: 21px; line-height: 1.12; letter-spacing: -.035em; max-width: 640px; }
+        .hero-sub { margin-top: 8px; color: var(--text-md); font-size: 13px; line-height: 1.5; max-width: 560px; }
+        .hero-cta { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-start; }
+        .hero-cta .btn { flex: 1 1 auto; padding: 11px 12px; font-size: 13px; }
+        .hero-stats { display: flex; gap: 8px; margin-top: 14px; }
+        .hs { flex: 1; padding: 8px 10px; border-radius: 12px; background: rgba(255,255,255,.04); border: 1px solid var(--line); }
+        .hs b { display: block; font: 800 16px 'Sora', sans-serif; color: var(--text-hi); }
+        .hs span { font-size: 11px; color: var(--text-lo); }
+        .hs.price { background: rgba(255,209,0,.1); border-color: rgba(255,209,0,.35); }
+        .hs.price b { color: var(--krb-yellow); }
+        @media (min-width: 769px) {
+            .hero { padding: 36px 36px 28px; margin-bottom: 26px; }
+            .hero-title { font-size: 40px; }
+            .hero-sub { font-size: 16px; }
+            .hero-cta .btn { flex: none; padding: 14px 24px; font-size: 15px; }
+            .hero-eyebrow { font-size: 11px; padding: 5px 10px; margin-bottom: 12px; }
+            .hero-stats { position: absolute; right: 36px; top: 36px; flex-direction: column; margin: 0; width: 170px; }
+            .hero-body { max-width: calc(100% - 210px); }
+        }
+
+        /* barra de ferramentas */
+        .toolbar { margin-bottom: 16px; }
+        .toolbar-left h2 { font-size: 20px; letter-spacing: -.02em; }
+        .toolbar-right { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; gap: 8px; }
+        .toolbar-right::-webkit-scrollbar { display: none; }
+        .chip { flex: none; padding: 9px 14px; border-radius: 999px; transition: background .15s, border-color .15s; }
+        .chip:hover { border-color: var(--line-strong); color: var(--text-hi); }
+        .sort-select { flex: none; width: auto; margin: 0; padding: 9px 12px; border-radius: 999px; }
+
+        /* cartões */
+        .video-grid { gap: 12px; padding: 2px 0; }
+        @media (min-width: 600px) { .video-grid { grid-template-columns: repeat(auto-fill, minmax(236px, 1fr)); gap: 18px; } }
+        .card { padding: 8px; border-radius: 16px; transition: transform .2s var(--ease), border-color .2s, box-shadow .2s; overflow: hidden; }
+        @media (hover: hover) { .card:hover { transform: translateY(-3px); border-color: rgba(255,209,0,.45); box-shadow: var(--krb-glow); } }
+        .thumb { border-radius: 11px; background: linear-gradient(110deg, #17171c 30%, #22222a 50%, #17171c 70%); background-size: 200% 100%; animation: shine 1.4s linear infinite; }
+        .thumb img { transition: transform .35s var(--ease); }
+        @media (hover: hover) { .card:hover .thumb img { transform: scale(1.04); } }
+        @keyframes shine { to { background-position: -200% 0; } }
+        .thumb::after { content: ""; position: absolute; inset: auto 0 0 0; height: 42%; background: linear-gradient(to top, rgba(0,0,0,.55), transparent); pointer-events: none; }
+        .fav-btn { top: 6px; right: 6px; width: 30px; height: 30px; background: rgba(8,8,10,.62); backdrop-filter: blur(6px); transition: transform .15s, color .15s; }
+        .fav-btn:hover { transform: scale(1.1); color: #ff6b7a; }
+        .play-fab { left: auto; top: auto; right: 8px; bottom: 8px; transform: none; width: 32px; height: 32px; font-size: 12px; opacity: 1; z-index: 2; box-shadow: 0 6px 16px -4px rgba(0,0,0,.7); padding-left: 2px; }
+        .card-title { margin: 10px 4px 6px; font-size: 13px; line-height: 1.35; height: 35px; letter-spacing: -.01em; }
+        .card-meta { margin: auto 4px 0; padding-bottom: 10px; gap: 8px; border-bottom: 1px solid var(--line); }
+        .card-meta .code { font-size: 11px; opacity: .9; }
+        .card-meta .price { font: 700 12px 'Sora', sans-serif; color: var(--text-hi); }
+        .card-actions { margin: 10px 2px 2px; width: auto; }
+        .btn-action { padding: 11px 6px; border-radius: 10px; background: transparent; border-color: rgba(255,209,0,.5); color: var(--krb-yellow); transition: background .15s, color .15s, transform .1s; }
+        .btn-action:hover { background: rgba(255,209,0,.12); }
+        .btn-action:active { transform: scale(.98); }
+        @media (min-width: 769px) { .card { padding: 10px; } .card-title { font-size: 14px; height: 38px; } .btn-action { padding: 12px; } }
+
+        .empty { padding: 56px 20px; }
+        .empty i { font-size: 34px; color: var(--text-lo); margin-bottom: 12px; }
+        .empty h3 { font-family: 'Sora'; margin-bottom: 8px; }
+        .empty p { font-size: 14px; margin-bottom: 18px; }
+        .empty .btn { background: #1d2a1f; border-color: rgba(37,211,102,.5); color: #7ef0a8; }
+
+        /* barra do pedido */
+        .pack-counter-balloon { display: none !important; }
+        .cart-container { padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); border-radius: 18px 18px 0 0; background: rgba(19,19,22,.96); backdrop-filter: blur(14px); border-top: 1px solid rgba(255,209,0,.35); animation: up .25s var(--ease); }
+        @keyframes up { from { transform: translateY(100%); } }
+        .cart-fab .cart-ico { width: 40px; height: 40px; font-size: 16px; }
+        .cart-fab .cart-txt .top { font-size: 14px; }
+        .cart-fab .cart-txt .bot { font-size: 12px; color: var(--text-md); }
+        .cart-fab .cart-txt .bot b { color: var(--krb-yellow); font-family: 'Sora'; }
+        .cart-fab .go-btn { padding: 12px 16px; font-size: 13px; box-shadow: 0 10px 24px -10px rgba(37,211,102,.7); }
+        @media (min-width: 769px) { .cart-container { bottom: 24px; right: 24px; width: 400px; border-radius: 18px; border: 1px solid rgba(255,209,0,.35); animation: none; } }
+
+        /* rodapé e voltar ao topo */
+        .site-foot { max-width: 1600px; margin: 40px auto 0; padding: 26px 16px 8px; border-top: 1px solid var(--line); text-align: center; color: var(--text-lo); font-size: 13px; }
+        .site-foot b { color: var(--text-md); font-family: 'Sora'; }
+        .site-foot a { color: var(--krb-yellow); text-decoration: none; font-weight: 700; }
+        .to-top { position: fixed; right: 14px; bottom: 96px; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line-strong); background: rgba(28,28,33,.92); color: var(--text-hi); cursor: pointer; z-index: 850; display: none; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
+        .to-top.show { display: inline-flex; }
+        @media (min-width: 769px) { .to-top { right: 24px; bottom: 24px; } body.has-cart .to-top { bottom: 110px; } }
+
+        .toast { top: auto; bottom: 110px; transform: translateX(-50%) translateY(16px); border-radius: 999px; padding: 10px 18px; }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .modal-overlay { padding: 12px; }
+        .player-shell { border-radius: 16px; }
+    </style>
+    <style id="krb-ads">
+        .ad-strip { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding: 9px 10px 9px 12px; border-radius: 14px; border: 1px solid rgba(255,209,0,.35); background: linear-gradient(90deg, rgba(255,209,0,.14), rgba(255,209,0,.03)); font-size: 13px; color: var(--text-md); }
+        .ad-strip .ad-txt { flex: 1; min-width: 0; line-height: 1.35; }
+        .ad-strip .ad-txt b { color: var(--text-hi); font-family: 'Sora', sans-serif; }
+        .ad-tag { flex: none; font: 800 10px 'Sora', sans-serif; letter-spacing: .08em; padding: 4px 8px; border-radius: 999px; background: var(--krb-yellow); color: #14110a; }
+        .ad-link { flex: none; font: 700 12px 'Sora', sans-serif; color: #14110a; background: var(--krb-yellow); padding: 8px 12px; border-radius: 10px; text-decoration: none; }
+        .ad-x { flex: none; width: 26px; height: 26px; border-radius: 50%; border: 0; background: rgba(255,255,255,.08); color: var(--text-md); cursor: pointer; font-size: 15px; line-height: 1; }
+        @media (max-width: 520px) { .ad-strip { flex-wrap: wrap; } .ad-strip .ad-txt { flex-basis: calc(100% - 100px); } .ad-link { order: 3; flex: 1; text-align: center; } }
+
+        .ad-card { grid-column: 1 / -1; position: relative; display: grid; grid-template-columns: 1fr; gap: 14px; padding: 16px; border-radius: 18px; overflow: hidden; border: 1px solid rgba(255,209,0,.4);
+                   background: radial-gradient(500px 220px at 100% 0, rgba(255,209,0,.2), transparent 60%), linear-gradient(135deg, #18181d, #0e0e11); }
+        .ad-card .ad-label { position: absolute; top: 10px; right: 12px; font: 700 9px 'Sora', sans-serif; letter-spacing: .1em; color: var(--text-lo); text-transform: uppercase; }
+        .ad-card h3 { font: 800 19px/1.15 'Sora', sans-serif; letter-spacing: -.03em; margin: 6px 0 6px; padding-right: 60px; }
+        .ad-card h3 .hi { color: var(--krb-yellow); }
+        .ad-card p { color: var(--text-md); font-size: 13.5px; line-height: 1.5; }
+        .ad-card ul { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 14px; }
+        .ad-card li { font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 999px; background: rgba(255,255,255,.06); border: 1px solid var(--line); color: var(--text-hi); }
+        .ad-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+        .ad-btns a { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 14px; border-radius: 11px; font: 700 13px 'Sora', sans-serif; text-decoration: none; border: 1px solid var(--line-strong); background: var(--bg-elevated); color: var(--text-hi); flex: 1 1 auto; transition: transform .15s, background .15s; }
+        .ad-btns a:hover { transform: translateY(-1px); background: var(--bg-hover); }
+        .ad-btns a.main { background: var(--krb-yellow); border-color: var(--krb-yellow); color: #14110a; }
+        .ad-btns svg { width: 16px; height: 16px; flex: none; }
+        .ad-shot { display: none; border-radius: 12px; border: 1px solid var(--line-strong); overflow: hidden; background: #000; align-self: center; box-shadow: 0 20px 50px -20px rgba(0,0,0,.8); }
+        .ad-shot img { display: block; width: 100%; height: auto; }
+        .ad-note { margin-top: 10px; font-size: 11px; color: var(--text-lo); }
+        @media (min-width: 769px) { .ad-card { grid-template-columns: 1.15fr .85fr; padding: 24px 28px; gap: 28px; } .ad-card h3 { font-size: 26px; } .ad-card p { font-size: 15px; } .ad-shot { display: block; } .ad-btns a { flex: none; } }
+
+        .ad-foot { max-width: 1600px; margin: 36px auto 0; padding: 0 14px; }
+        .ad-foot .ad-card { grid-template-columns: 1fr; }
+        @media (min-width: 769px) { .ad-foot .ad-card { grid-template-columns: 1.15fr .85fr; } }
+    </style>
 </head>
 <body>
     <header class="app-header">
@@ -166,30 +346,40 @@
             <div class="search-wrap">
                 <div class="search-box">
                     <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" id="searchInput" class="search-input" placeholder="Pesquisar música ou código...">
-                    <button class="search-clear" id="searchClear"><i class="fa-solid fa-xmark"></i></button>
+                    <input type="search" id="searchInput" class="search-input" placeholder="Pesquisar música ou código..." autocomplete="off" enterkeyhint="search">
+                    <button class="search-clear" id="searchClear" aria-label="Limpar busca" type="button"><i class="fa-solid fa-xmark"></i></button>
                     <span class="kbd">Ctrl K</span>
                 </div>
             </div>
         </div>
-        <div class="stats-strip">
-            <span class="stat"><b id="statVideos">0</b> playbacks</span>
-            <span class="stat"><b id="statCategories">0</b> pastas</span>
-        </div>
+        <div class="cat-chips" id="catChips" aria-label="Categorias"></div>
     </header>
 
     <div class="drawer-backdrop" id="drawerBackdrop"></div>
     <div class="layout">
         <aside class="sidebar" id="sidebar"><div class="sidebar-title">Categorias</div><ul class="cat-list" id="categoryList"></ul></aside>
         <main class="content">
-            <div class="pack-promo-banner">
-                <span><i class="fa-solid fa-music"></i> Catálogo de Playbacks</span>
-                <span>R$ 10,00 por Playback</span>
-            </div>
+            <aside class="ad-strip" id="adStrip" hidden>
+                <span class="ad-tag">NOVO</span>
+                <span class="ad-txt"><b>KRB CREATOR</b>: crie você mesmo vídeos de karaokê com a letra sincronizada. Teste grátis.</span>
+                <a class="ad-link" href="https://krbcreatorai.com.br/?utm_source=catalogo&utm_medium=faixa&utm_campaign=app" target="_blank" rel="noopener noreferrer">Conhecer</a>
+                <button class="ad-x" type="button" aria-label="Fechar anúncio" onclick="closeAdStrip()">×</button>
+            </aside>
             <section class="hero">
-                <span class="hero-eyebrow"><i class="fa-solid fa-crown"></i> KRB Playbacks</span>
-                <h2 class="hero-title">Mais de <span class="hi" id="heroCount">0</span> arquivos de alta qualidade.</h2>
-                <div class="hero-cta"><button class="btn btn-primary" id="ctaExplore"><i class="fa-solid fa-compact-disc"></i> Começar a Explorar</button></div>
+                <div class="hero-body">
+                    <span class="hero-eyebrow"><i class="fa-solid fa-crown"></i> KRB Playbacks</span>
+                    <h2 class="hero-title">Mais de <span class="hi" id="heroCount">0</span> playbacks em alta qualidade.</h2>
+                    <p class="hero-sub">Escolha as músicas, monte o seu pedido e finalize pelo WhatsApp. Playbacks prontos, disponíveis na hora.</p>
+                    <div class="hero-cta">
+                        <button class="btn btn-primary" id="ctaExplore"><i class="fa-solid fa-compact-disc"></i> Explorar o catálogo</button>
+                        <a class="btn btn-ghost" id="ctaCustom" href="#" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-whatsapp"></i> Não achou? Encomende</a>
+                    </div>
+                </div>
+                <div class="hero-stats">
+                    <div class="hs"><b id="statVideos">0</b><span>playbacks</span></div>
+                    <div class="hs"><b id="statCategories">0</b><span>pastas</span></div>
+                    <div class="hs price"><b>R$ 10</b><span>por playback</span></div>
+                </div>
             </section>
             <div class="toolbar">
                 <div class="toolbar-left"><h2 id="sectionTitle">Todos os vídeos</h2><span class="count">— <b id="countDisplay">0</b> cadastrados</span></div>
@@ -204,7 +394,7 @@
                 </div>
             </div>
             <div class="video-grid" id="videoGrid"></div>
-            <div class="empty" id="emptyState"><i class="fa-solid fa-video-slash"></i><h3>Nenhuma música encontrada</h3></div>
+            <div class="empty" id="emptyState"><i class="fa-solid fa-video-slash"></i><h3>Nenhuma música encontrada</h3><p>Confira o nome ou o código. Se o playback não está no catálogo, a gente faz para você.</p><button class="btn" type="button" onclick="orderMissing()"><i class="fa-brands fa-whatsapp"></i> Encomendar esta música</button></div>
         </main>
     </div>
 
@@ -215,12 +405,14 @@
         <div class="cart-fab">
             <div class="cart-main-clickable" onclick="sendOrder()">
                 <div class="cart-ico"><i class="fa-solid fa-basket-shopping"></i></div>
-                <div class="cart-txt"><span class="top"><span id="cartFabCount">0</span> selecionadas</span><span class="bot">Clique para finalizar</span></div>
+                <div class="cart-txt"><span class="top"><span id="cartFabCount">0</span> selecionadas</span><span class="bot">Total <b id="cartFabTotal">R$ 0,00</b></span></div>
             </div>
             <button class="go-btn" onclick="sendOrder()">Pedir via WhatsApp <i class="fa-brands fa-whatsapp"></i></button>
         </div>
     </div>
-
+    <div class="ad-foot" id="adFoot"></div>
+    <footer class="site-foot"><p><b>KRB CatálogoOficial</b> · Playbacks para karaokê</p><p style="margin-top:6px">Dúvidas ou pedidos especiais? <a id="footWpp" href="#" target="_blank" rel="noopener noreferrer">Fale no WhatsApp</a></p></footer>
+    <button class="to-top" id="toTop" aria-label="Voltar ao topo"><i class="fa-solid fa-arrow-up"></i></button>
     <div class="toast" id="toast"><i class="fa-solid fa-circle-check"></i><span id="toastMsg">Adicionado!</span></div>
 
     <div class="modal-overlay" id="playerModal" onclick="closePlayer()">
@@ -260,11 +452,18 @@ const playlists  = ["ALEXANDRE PIRES", "AXÉ", "Daniela mercury", "Fabio Junior"
         document.getElementById('statCategories').textContent = playlists.length;
         document.getElementById('heroCount').textContent = videosData.length;
 
+        const catCounts = {}; videosData.forEach(v => { catCounts[v.playlist] = (catCounts[v.playlist] || 0) + 1; });
         function renderCategories() {
             const list = document.getElementById('categoryList');
-            let items = [{ id: "Todos", label: "Todos os vídeos", icon: "fa-solid fa-border-all" }, { id: "__FAV__", label: "Meus Favoritos", icon: "fa-solid fa-heart" }, { id: "__NEW__", label: "Novidades", icon: "fa-solid fa-fire" }];
-            playlists.forEach(pl => items.push({ id: pl, label: pl, icon: "fa-solid fa-compact-disc" }));
-            list.innerHTML = items.map(it => `<li class="cat-item ${currentCategory === it.id ? 'active' : ''}" onclick="selectCategory('${escapeHtml(it.id)}')"><i class="cat-icon ${it.icon}"></i><span style="flex:1">${escapeHtml(it.label)}</span></li>`).join('');
+            let items = [{ id: "Todos", label: "Todos os vídeos", icon: "fa-solid fa-border-all", n: videosData.length }, { id: "__FAV__", label: "Meus Favoritos", icon: "fa-solid fa-heart", n: favRefs.size }, { id: "__NEW__", label: "Novidades", icon: "fa-solid fa-fire" }];
+            playlists.forEach(pl => items.push({ id: pl, label: pl, icon: "fa-solid fa-compact-disc", n: catCounts[pl] || 0 }));
+            list.innerHTML = items.map(it => `<li class="cat-item ${currentCategory === it.id ? 'active' : ''}" onclick="selectCategory('${escapeHtml(it.id)}')"><i class="cat-icon ${it.icon}"></i><span style="flex:1">${escapeHtml(it.label)}</span>${it.n ? `<span class="n">${it.n}</span>` : ''}</li>`).join('');
+            const chips = document.getElementById('catChips');
+            if (chips) {
+                chips.innerHTML = items.map(it => `<button type="button" class="cat-chip ${currentCategory === it.id ? 'active' : ''}" onclick="selectCategory('${escapeHtml(it.id)}')">${escapeHtml(it.label === 'Todos os vídeos' ? 'Todos' : it.label)}${it.n ? ` <em>${it.n}</em>` : ''}</button>`).join('');
+                const a = chips.querySelector('.cat-chip.active');
+                if (a) chips.scrollTo({ left: a.offsetLeft - 14, behavior: 'smooth' });
+            }
         }
 
         function selectCategory(cat) { currentCategory = cat; displayLimit = 40; renderCategories(); filterAndRender(); document.getElementById('sidebar').classList.remove('open'); document.getElementById('drawerBackdrop').classList.remove('show'); document.getElementById('sectionTitle').textContent = (cat === '__FAV__' ? 'Meus Favoritos' : (cat === '__NEW__' ? 'Novidades' : cat)); }
@@ -288,22 +487,24 @@ const playlists  = ["ALEXANDRE PIRES", "AXÉ", "Daniela mercury", "Fabio Junior"
             const grid = document.getElementById('videoGrid'); const empty = document.getElementById('emptyState');
             if (list.length === 0) { grid.innerHTML = ''; empty.style.display = 'block'; return; } empty.style.display = 'none';
             
-            const startIdx = appendMode ? grid.children.length : 0;
+            const startIdx = appendMode ? grid.querySelectorAll('.card').length : 0;
             const toDisplay = list.slice(startIdx, displayLimit);
             
             const cardsHtml = toDisplay.map(v => {
                 const fav = favRefs.has(v.ref), sel = selectedRefs.has(v.ref);
-                return `<div class="card" data-cardref="${escapeHtml(v.ref)}"><div class="thumb" onclick="openPlayer('${escapeHtml(v.youtubeId)}')"><button class="fav-btn ${fav ? 'active' : ''}" onclick="event.stopPropagation(); toggleFav('${escapeHtml(v.ref)}', this)"><i class="${fav ? 'fa-solid' : 'fa-regular'} fa-heart"></i></button><img loading="lazy" src="https://i.ytimg.com/vi/${escapeHtml(v.youtubeId)}/mqdefault.jpg" onerror="this.src='https://i.ytimg.com/vi/${escapeHtml(v.youtubeId)}/0.jpg'"><div class="play-fab"><i class="fa-solid fa-play"></i></div></div><h3 class="card-title">${escapeHtml(v.titulo)}</h3><div class="card-meta"><span class="code">${escapeHtml(v.ref)}</span></div><div class="card-actions"><button class="btn-action add ${sel ? 'selected' : ''}" onclick="toggleSelection('${escapeHtml(v.ref)}', this)"><i class="fa-solid ${sel ? 'fa-check' : 'fa-cart-plus'}"></i> <span>${sel ? 'Adicionado' : 'Adicionar'}</span></button></div></div>`;
+                const refE = escapeHtml(v.ref), idE = escapeHtml(v.youtubeId), nome = cleanTitle(v.titulo);
+                return `<div class="card" data-cardref="${refE}"><div class="thumb" onclick="openPlayer('${idE}')"><button class="fav-btn ${fav ? 'active' : ''}" aria-label="Favoritar" onclick="event.stopPropagation(); toggleFav('${refE}', this)"><i class="${fav ? 'fa-solid' : 'fa-regular'} fa-heart"></i></button><img loading="lazy" decoding="async" alt="" src="https://i.ytimg.com/vi/${idE}/mqdefault.jpg" onerror="this.src='https://i.ytimg.com/vi/${idE}/0.jpg'"><div class="play-fab"><i class="fa-solid fa-play"></i></div></div><h3 class="card-title" title="${escapeHtml(v.titulo)}">${escapeHtml(nome)}</h3><div class="card-meta"><span class="code">${refE}</span><span class="price">R$ 10,00</span></div><div class="card-actions"><button class="btn-action add ${sel ? 'selected' : ''}" onclick="toggleSelection('${refE}', this)"><i class="fa-solid ${sel ? 'fa-check' : 'fa-cart-plus'}"></i> <span>${sel ? 'Adicionado' : 'Adicionar'}</span></button></div></div>`;
             }).join('');
 
             if (appendMode) { grid.insertAdjacentHTML('beforeend', cardsHtml); } 
             else { grid.innerHTML = cardsHtml; }
+            placeAds();
         }
 
         window.addEventListener('scroll', () => {
             if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 400) {
                 const listCount = getFilteredList().length;
-                const currentCardsCount = document.getElementById('videoGrid').children.length;
+                const currentCardsCount = document.getElementById('videoGrid').querySelectorAll('.card').length;
                 if (currentCardsCount < listCount) {
                     displayLimit += 40;
                     filterAndRender(true);
@@ -351,7 +552,7 @@ const playlists  = ["ALEXANDRE PIRES", "AXÉ", "Daniela mercury", "Fabio Junior"
         function updateCart() { 
             const count = selectedRefs.size; 
             document.getElementById('cartFabCount').textContent = count; 
-            document.getElementById('cartBadge').textContent = count; 
+            document.getElementById('cartBadge').textContent = count; document.getElementById('cartFabTotal').textContent = 'R$ ' + (count * 10).toFixed(2).replace('.', ','); document.body.classList.toggle('has-cart', count > 0); document.getElementById('cartToggleBtn').classList.toggle('has-items', count > 0); 
             
             const container = document.getElementById('cartContainer');
             const balloon = document.getElementById('packBalloon');
@@ -407,6 +608,51 @@ const playlists  = ["ALEXANDRE PIRES", "AXÉ", "Daniela mercury", "Fabio Junior"
         document.getElementById('chipNew').addEventListener('click', () => selectCategory(currentCategory === '__NEW__' ? 'Todos' : '__NEW__'));
         document.getElementById('ctaExplore').addEventListener('click', () => { document.getElementById('videoGrid').scrollIntoView({ behavior: 'smooth' }); });
 
+        // ---- polimento: título limpo, busca, atalhos, voltar ao topo, encomenda ----
+        function cleanTitle(t) { return String(t).replace(/\s+PLAYBACK(\s+KARAOKE)?(\s+DEMONSTRA[ÇC][ÃA]O)?\s*$/i, '').replace(/\s+DEMONSTRA[ÇC][ÃA]O\s*$/i, '').trim() || String(t); }
+        const wppLink = (txt) => `https://wa.me/${zapNumber}?text=${encodeURIComponent(txt)}`;
+        document.getElementById('ctaCustom').href = wppLink('Olá! Quero encomendar um playback que não encontrei no catálogo.\n\nMúsica:\nArtista:');
+        document.getElementById('footWpp').href = wppLink('Olá! Tenho uma dúvida sobre o catálogo de playbacks.');
+        window.orderMissing = () => { const q = searchQuery.trim(); window.open(wppLink('Olá! Quero encomendar um playback que não encontrei no catálogo.\n\nMúsica: ' + q + '\nArtista:'), '_blank', 'noopener'); };
+        (function polish() {
+            const input = document.getElementById('searchInput'), clear = document.getElementById('searchClear'), top = document.getElementById('toTop');
+            const sync = () => clear.classList.toggle('show', input.value.length > 0);
+            input.addEventListener('input', sync);
+            clear.addEventListener('click', () => { input.value = ''; searchQuery = ''; displayLimit = 40; sync(); filterAndRender(); input.focus(); });
+            input.addEventListener('keydown', e => { if (e.key === 'Enter') { input.blur(); document.getElementById('videoGrid').scrollIntoView({ behavior: 'smooth' }); } });
+            document.addEventListener('keydown', e => {
+                const typing = /INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || '');
+                if (((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') || (e.key === '/' && !typing)) { e.preventDefault(); input.focus(); input.select(); }
+                if (e.key === 'Escape') closePlayer();
+            });
+            window.addEventListener('scroll', () => top.classList.toggle('show', window.scrollY > 900), { passive: true });
+            top.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+        })();
+        // ---- anúncios do KRB CREATOR ----
+        const KRB_APP = 'https://krbcreatorai.com.br/';
+        const adUrl = (path, medium) => `${KRB_APP}${path}${path.includes('?') ? '&' : '?'}utm_source=catalogo&utm_medium=${medium}&utm_campaign=app`;
+        function adCardHtml(medium) {
+            return `<aside class="ad-card" aria-label="Anúncio KRB CREATOR"><span class="ad-label">Anúncio</span>
+                <div><h3>Quer fazer o <span class="hi">seu próprio karaokê?</span></h3>
+                <p>O <b>KRB CREATOR</b> transforma uma música e uma letra em um vídeo de karaokê, com a letra acendendo palavra por palavra. Para Windows e Android.</p>
+                <ul><li>Letra sincronizada palavra por palavra</li><li>Sync AI automática</li><li>Vídeo MP4 pronto para o YouTube</li></ul>
+                <div class="ad-btns"><a class="main" href="${adUrl('demo.html', medium)}" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 5.5 10.5 4.4v7.1H3zM11.5 4.25 21 3v8.5h-9.5zM3 12.5h7.5v7.1L3 18.5zM11.5 12.5H21V21l-9.5-1.3z"/></svg>Baixar demo para Windows</a><a href="${adUrl('celular.html', medium)}" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7.2 9.5h9.6v8.2a1.2 1.2 0 0 1-1.2 1.2h-1v2.3a1.1 1.1 0 0 1-2.2 0v-2.3h-1.6v2.3a1.1 1.1 0 0 1-2.2 0v-2.3h-1A1.2 1.2 0 0 1 7.2 17.7zM4.9 9.7a1.1 1.1 0 0 1 2.2 0v5.5a1.1 1.1 0 0 1-2.2 0zm12 0a1.1 1.1 0 0 1 2.2 0v5.5a1.1 1.1 0 0 1-2.2 0zM7.4 8.6a4.6 4.6 0 0 1 2.2-3.6L8.6 3.3a.3.3 0 0 1 .5-.3l1 1.7a5.4 5.4 0 0 1 3.8 0l1-1.7a.3.3 0 0 1 .5.3l-1 1.7a4.6 4.6 0 0 1 2.2 3.6z"/></svg>Demo para Android</a><a href="${adUrl('', medium)}" target="_blank" rel="noopener noreferrer">Conhecer o app</a></div>
+                <p class="ad-note">A demonstração é grátis, sem cadastro, e salva os vídeos com marca d'água.</p></div>
+                <a class="ad-shot" href="${adUrl('', medium)}" target="_blank" rel="noopener noreferrer" aria-label="Conhecer o KRB CREATOR"><img loading="lazy" decoding="async" alt="Tela do KRB CREATOR sincronizando a letra de uma música" src="${KRB_APP}assets/2-sync.jpg"></a></aside>`;
+        }
+        function placeAds() {
+            const grid = document.getElementById('videoGrid');
+            grid.querySelectorAll('.ad-card').forEach(el => el.remove());
+            if (currentCategory === '__FAV__') return;
+            const cards = grid.querySelectorAll('.card');
+            for (let i = 7, n = 0; i < cards.length; i += 24, n++) cards[i].insertAdjacentHTML('afterend', adCardHtml('lista'));
+        }
+        window.closeAdStrip = () => { document.getElementById('adStrip').hidden = true; try { localStorage.setItem('krb_ad_strip', '1'); } catch (e) {} };
+        (function initAds() {
+            let closed = false; try { closed = localStorage.getItem('krb_ad_strip') === '1'; } catch (e) {}
+            document.getElementById('adStrip').hidden = closed;
+            const foot = document.getElementById('adFoot'); if (foot) foot.innerHTML = adCardHtml('rodape');
+        })();
         renderCategories(); filterAndRender(); document.getElementById('favBadge').textContent = favRefs.size;
     </script>
 </body>
